@@ -269,7 +269,7 @@ final class ColorPickerInputHandler {
         if (isAnyFieldFocused) {
             boolean isUp = key == InputConstants.KEY_UP
                     || key == InputConstants.KEY_ADD
-                    || key == InputConstants.KEY_EQUAL;
+                    || key == InputConstants.KEY_EQUALS;
             boolean isDown = key == InputConstants.KEY_DOWN
                     || key == InputConstants.KEY_MINUS
                     || key == org.lwjgl.sdl.SDLScancode.SDL_SCANCODE_KP_MINUS;
