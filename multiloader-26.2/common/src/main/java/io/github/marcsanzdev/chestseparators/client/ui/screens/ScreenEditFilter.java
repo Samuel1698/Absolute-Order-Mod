@@ -485,7 +485,7 @@ public class ScreenEditFilter extends AbstractEditorScreen {
 
     @Override
     protected void buildWidgets() {
-        quantityButton = null;
+        quantitySlider = null;
         int btnW = layout.btnW;
         int bH = layout.bH;
         int btnX = layout.rightX;
