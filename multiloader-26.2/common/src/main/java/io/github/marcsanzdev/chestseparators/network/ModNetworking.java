@@ -441,6 +441,8 @@ public final class ModNetworking {
         // but already synced to this server for pickup enforcement; reuse that authoritative snapshot.
         Inventory inventory = player.getInventory();
         Map<Integer, SlotWhitelist> playerFilters = ChestSeparatorsState.INVENTORY_FILTERS.get(player.getUUID());
+        // Rehome loose non-hotbar stacks before deciding how many items can leave each filter.
+        io.github.marcsanzdev.chestseparators.util.InventorySlotRefill.refill(inventory, playerFilters);
         // Preserve discovery order so the animation roughly mirrors inventory layout.
         Map<BlockPos, Map<Item, Integer>> moved = new java.util.LinkedHashMap<>();
         // Containers that actually received items, so only those get their groups re-sorted afterwards.

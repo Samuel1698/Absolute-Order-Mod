@@ -1393,6 +1393,72 @@ public class ChestSeparatorsEditor {
         }
     }
 
+    /**
+     * Place loose main-inventory stacks into matching home slots before the open-container Push
+     * click sequence. Using real container clicks (rather than editing predicted client stacks)
+     * keeps the client and server inventories synchronized. The server's inventory-menu refill
+     * hook does not run in this container, so it cannot interrupt these clicks halfway through.
+     * Never source items from the hotbar, armor, offhand, or other filtered slots.
+     */
+    private void consolidatePlayerBeforeDeposit(
+            Map<Integer, io.github.marcsanzdev.chestseparators.data.SlotWhitelist> filters,
+            net.minecraft.client.multiplayer.MultiPlayerGameMode gameMode,
+            net.minecraft.world.entity.player.Player player, int menuId) {
+        if (filters == null || filters.isEmpty()) return;
+        Map<Integer, net.minecraft.world.inventory.Slot> mainSlots = new java.util.TreeMap<>();
+        for (net.minecraft.world.inventory.Slot slot : accessor.getHandler().slots) {
+            if (slot.container instanceof net.minecraft.world.entity.player.Inventory
+                    && slot.getContainerSlot() >= 9
+                    && slot.getContainerSlot() < net.minecraft.world.entity.player.Inventory.INVENTORY_SIZE) {
+                mainSlots.put(slot.getContainerSlot(), slot);
+            }
+        }
+        // Fill partial matching stacks first; empty homes in a second pass.
+        for (int pass = 0; pass < 2; pass++) {
+            for (Map.Entry<Integer, net.minecraft.world.inventory.Slot> homeEntry : mainSlots.entrySet()) {
+                net.minecraft.world.inventory.Slot home = homeEntry.getValue();
+                var filter = filters.get(homeEntry.getKey());
+                if (filter == null || filter.allowedItems().isEmpty()) continue;
+                net.minecraft.world.item.ItemStack stack = home.getItem();
+                if (pass == 0 && (stack.isEmpty() || !filter.allowedItems().contains(
+                        net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(stack.getItem()).toString()))) {
+                    continue;
+                }
+                if (pass == 1 && !stack.isEmpty()) continue;
+
+                // When the home is empty, try the filter's allowed items in the configured order.
+                List<String> preferred = stack.isEmpty() ? filter.allowedItems() :
+                        List.of(net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(stack.getItem()).toString());
+                for (String itemId : preferred) {
+                    for (Map.Entry<Integer, net.minecraft.world.inventory.Slot> sourceEntry : mainSlots.entrySet()) {
+                        if (filters.containsKey(sourceEntry.getKey()) || sourceEntry.getKey().equals(homeEntry.getKey())) continue;
+                        net.minecraft.world.inventory.Slot source = sourceEntry.getValue();
+                        net.minecraft.world.item.ItemStack extra = source.getItem();
+                        if (extra.isEmpty() || !net.minecraft.core.registries.BuiltInRegistries.ITEM
+                                .getKey(extra.getItem()).toString().equals(itemId)) continue;
+                        net.minecraft.world.item.ItemStack current = home.getItem();
+                        if (!current.isEmpty()
+                                && !net.minecraft.world.item.ItemStack.isSameItemSameComponents(current, extra)) continue;
+                        int maximum = Math.min(extra.getMaxStackSize(), home.getMaxStackSize(extra));
+                        if (current.getCount() >= maximum) break;
+                        // Pickup source, merge into home, then return any leftover to the source.
+                        gameMode.handleContainerInput(menuId, source.index, 0,
+                                net.minecraft.world.inventory.ContainerInput.PICKUP, player);
+                        gameMode.handleContainerInput(menuId, home.index, 0,
+                                net.minecraft.world.inventory.ContainerInput.PICKUP, player);
+                        if (!accessor.getHandler().getCarried().isEmpty()) {
+                            gameMode.handleContainerInput(menuId, source.index, 0,
+                                    net.minecraft.world.inventory.ContainerInput.PICKUP, player);
+                        }
+                        if (accessor.getHandler().getCarried().isEmpty() && home.hasItem()
+                                && home.getItem().getCount() >= maximum) break;
+                    }
+                    if (home.hasItem()) break;
+                }
+            }
+        }
+    }
+
     public void executeDeposit(boolean shift) {
         if (accessor.getHandler() == null || net.minecraft.client.Minecraft.getInstance().player == null) return;
         if (!accessor.getHandler().getCarried().isEmpty()) return;
@@ -1405,6 +1471,10 @@ public class ChestSeparatorsEditor {
         net.minecraft.world.entity.player.Player player = net.minecraft.client.Minecraft.getInstance().player;
         var playerFilters = io.github.marcsanzdev.chestseparators.data.ChestConfigManager.getInstance()
                 .getPlayerInventoryFilters();
+
+        // Refill dedicated main-inventory stacks BEFORE determining per-slot deposit allowances.
+        // The subsequent Keep limit still protects the selected number of items overall.
+        consolidatePlayerBeforeDeposit(playerFilters, interactionManager, player, syncId);
 
         int totalMovedCount = 0;
 

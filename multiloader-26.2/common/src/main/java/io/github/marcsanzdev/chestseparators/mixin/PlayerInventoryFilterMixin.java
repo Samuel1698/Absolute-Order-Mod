@@ -4,6 +4,7 @@ import io.github.marcsanzdev.chestseparators.ChestSeparatorsState;
 import io.github.marcsanzdev.chestseparators.data.SlotWhitelist;
 import io.github.marcsanzdev.chestseparators.util.FilterPriority;
 import io.github.marcsanzdev.chestseparators.util.InventoryPickupContext;
+import io.github.marcsanzdev.chestseparators.util.InventorySlotRefill;
 import java.util.Map;
 import net.minecraft.core.NonNullList;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -48,6 +49,10 @@ public abstract class PlayerInventoryFilterMixin {
 
     @Inject(method = "add(Lnet/minecraft/world/item/ItemStack;)Z", at = @At("RETURN"))
     private void chestseparators$endInsert(ItemStack stack, CallbackInfoReturnable<Boolean> cir) {
+        if (!player.level().isClientSide() && InventoryPickupContext.isGroundPickup(player.getUUID())) {
+            InventorySlotRefill.refill((Inventory) (Object) this,
+                    ChestSeparatorsState.INVENTORY_FILTERS.get(player.getUUID()));
+        }
         chestseparators$insertingStack = null;
     }
 
