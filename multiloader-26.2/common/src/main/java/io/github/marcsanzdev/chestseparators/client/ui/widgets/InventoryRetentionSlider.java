@@ -6,7 +6,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.network.chat.Component;
 
-/** Five discrete retention stops, left to right: All, 64, 32, 16, 1. */
+/** Compact draggable Keep slider: All, 64, 32, 16, 1 marks with exact in-between values. */
 public final class InventoryRetentionSlider extends CustomWidget {
     private final IntSupplier current;
     private final IntConsumer update;
@@ -17,7 +17,7 @@ public final class InventoryRetentionSlider extends CustomWidget {
         super(x, y, width, height, null);
         this.current = current;
         this.update = update;
-        this.tooltipText = "Retain this many per item in the filter group: All / 64 / 32 / 16 / 1";
+        this.tooltipText = "Keep: drag for 1-64 (marks: All / 64 / 32 / 16 / 1); scroll for exact +/-1";
     }
 
     @Override
@@ -34,23 +34,29 @@ public final class InventoryRetentionSlider extends CustomWidget {
         return true;
     }
 
+    public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
+        if (isDisabled || !isHovering(mouseX, mouseY) || delta == 0) return false;
+        update.accept(io.github.marcsanzdev.chestseparators.util.InventoryRetentionSteps.adjustByWheel(
+                current.getAsInt(), delta > 0 ? 1 : -1));
+        return true;
+    }
+
     public void stopDrag() {
         dragging = false;
     }
 
     private int trackStart() {
-        return x + 57;
+        return x + 6;
     }
 
     private int trackEnd() {
-        return x + width - 7;
+        return x + width - 6;
     }
 
     private void updateFromMouse(double mouseX) {
         int span = Math.max(1, trackEnd() - trackStart());
         double fraction = Math.max(0, Math.min(1, (mouseX - trackStart()) / span));
-        int index = io.github.marcsanzdev.chestseparators.util.InventoryRetentionSteps.stopAtFraction(fraction);
-        update.accept(io.github.marcsanzdev.chestseparators.util.InventoryRetentionSteps.valueForStop(index));
+        update.accept(io.github.marcsanzdev.chestseparators.util.InventoryRetentionSteps.valueAtFraction(fraction));
     }
 
     @Override
@@ -62,25 +68,25 @@ public final class InventoryRetentionSlider extends CustomWidget {
                 context, x, y, width, height, hover, false);
         String label = value <= 0 ? "Keep: All" : "Keep: " + value;
         context.pose().pushMatrix();
-        context.pose().translate(x + 3.0f, y + 2.0f);
-        context.pose().scale(0.68f, 0.68f);
+        context.pose().translate(x + 3.0f, y + 1.0f);
+        context.pose().scale(0.62f, 0.62f);
         context.text(Minecraft.getInstance().font, label, 0, 0,
                 io.github.marcsanzdev.chestseparators.client.ui.UiTheme.TEXT, false);
         context.pose().popMatrix();
 
+        // Use virtually the entire 108px widget as a track; the label sits ABOVE it.
         int start = trackStart();
         int end = trackEnd();
-        int mid = y + height / 2;
-        context.fill(start, mid - 1, end + 1, mid + 1, 0xFF626262);
-        int stops = io.github.marcsanzdev.chestseparators.util.InventoryRetentionSteps.count();
-        for (int i = 0; i < stops; i++) {
-            int tickX = start + (end - start) * i / (stops - 1);
-            context.fill(tickX, mid - 3, tickX + 1, mid + 4, 0xFF989898);
+        int lineY = y + height - 2;
+        context.fill(start, lineY, end + 1, lineY + 1, 0xFF626262);
+        int marks = io.github.marcsanzdev.chestseparators.util.InventoryRetentionSteps.count();
+        for (int i = 0; i < marks; i++) {
+            int px = start + (end - start) * i / (marks - 1);
+            context.fill(px, lineY - 2, px + 1, lineY + 2, 0xFF989898);
         }
-        int knob = start + (end - start)
-                * io.github.marcsanzdev.chestseparators.util.InventoryRetentionSteps.stopForSavedValue(value)
-                / (stops - 1);
-        context.fill(knob - 2, mid - 4, knob + 3, mid + 5, 0xFFDEDEDE);
+        int knob = start + (int) Math.round((end - start) *
+                io.github.marcsanzdev.chestseparators.util.InventoryRetentionSteps.fractionForValue(value));
+        context.fill(knob - 2, lineY - 3, knob + 3, lineY + 3, 0xFFDEDEDE);
         if (hover && tooltipText != null) {
             context.setTooltipForNextFrame(Minecraft.getInstance().font,
                     Component.literal(tooltipText), mouseX, mouseY);

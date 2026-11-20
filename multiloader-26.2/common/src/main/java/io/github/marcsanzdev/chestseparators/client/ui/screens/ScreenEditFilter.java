@@ -55,6 +55,10 @@ public class ScreenEditFilter extends AbstractEditorScreen {
         if (quantitySlider != null) quantitySlider.stopDrag();
     }
 
+    private boolean scrollRetentionSlider(double mouseX, double mouseY, double verticalAmount) {
+        return quantitySlider != null && quantitySlider.mouseScrolled(mouseX, mouseY, verticalAmount);
+    }
+
     @Override
     public void init() {
         super.init();
@@ -676,8 +680,7 @@ public class ScreenEditFilter extends AbstractEditorScreen {
             widgets.add(btnHopper);
         }
 
-        // A compact five-stop slider fits the existing 12-pixel gap before Save.
-        // All (0) is a distinct legacy setting, NOT the same as keeping exactly 64.
+        // Compact continuous slider with marked stack sizes. All (0) stays distinct from keeping 64.
         if (invFilter) {
             quantitySlider = new io.github.marcsanzdev.chestseparators.client.ui.widgets.InventoryRetentionSlider(
                     btnX, mainY + 154, btnW, 11,
@@ -1043,6 +1046,7 @@ public class ScreenEditFilter extends AbstractEditorScreen {
     }
 
     public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
+        if (scrollRetentionSlider(mouseX, mouseY, verticalAmount)) return true;
         float scrollSpeed = 18f;
 
         // While previewing, the scroll wheel always controls the preview panel.

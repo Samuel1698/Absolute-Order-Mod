@@ -1,33 +1,46 @@
 package io.github.marcsanzdev.chestseparators.util;
 
-/** Pure, backwards-compatible mapping for the compact inventory Keep slider. */
+/**
+ * Continuous Keep slider mapping, with five visible reference marks.
+ * Left to right: All, 64, 32, 16, 1. All (0) remains distinct from exactly 64.
+ * Within the numeric portion, interpolation allows EVERY integer from 1 to 64.
+ */
 public final class InventoryRetentionSteps {
-    // Slider is intentionally reversed: unlimited on the left, one on the far right.
-    private static final int[] STOPS = {0, 64, 32, 16, 1};
+    private static final int[] MARKERS = {0, 64, 32, 16, 1};
 
     private InventoryRetentionSteps() {}
 
     public static int count() {
-        return STOPS.length;
+        return MARKERS.length;
     }
 
     public static int valueForStop(int index) {
-        return STOPS[Math.max(0, Math.min(STOPS.length - 1, index))];
+        return MARKERS[Math.max(0, Math.min(MARKERS.length - 1, index))];
     }
 
-    public static int stopAtFraction(double fraction) {
-        double bounded = Math.max(0, Math.min(1, fraction));
-        return (int) Math.round(bounded * (STOPS.length - 1));
+    /** Dragging exactly to the left end selects All; its neighboring region selects 64. */
+    public static int valueAtFraction(double fraction) {
+        double f = Math.max(0.0, Math.min(1.0, fraction));
+        if (f == 0.0) return 0;
+        if (f <= 0.25) return 64;
+        if (f <= 0.50) return 64 - (int) Math.round((f - 0.25) / 0.25 * 32.0);
+        if (f <= 0.75) return 32 - (int) Math.round((f - 0.50) / 0.25 * 16.0);
+        return Math.max(1, 16 - (int) Math.round((f - 0.75) / 0.25 * 15.0));
     }
 
-    public static int stopForSavedValue(int value) {
-        for (int i = 0; i < STOPS.length; i++) if (STOPS[i] == value) return i;
-        // Don't change non-standard counts from old saves just by rendering the editor.
-        if (value <= 0) return 0;
-        int best = 1;
-        for (int i = 2; i < STOPS.length; i++) {
-            if (Math.abs(STOPS[i] - value) < Math.abs(STOPS[best] - value)) best = i;
-        }
-        return best;
+    /** Inverse mapping: a saved custom quantity is drawn at its true position, not snapped to a mark. */
+    public static double fractionForValue(int value) {
+        if (value <= 0) return 0.0;
+        if (value >= 64) return 0.25;
+        if (value >= 32) return 0.25 + (64 - value) / 32.0 * 0.25;
+        if (value >= 16) return 0.50 + (32 - value) / 16.0 * 0.25;
+        return 0.75 + (16 - value) / 15.0 * 0.25;
+    }
+
+    /** Scroll wheel gives exact counts even when the game uses a large GUI scale. */
+    public static int adjustByWheel(int value, int steps) {
+        if (steps == 0) return value;
+        int start = value <= 0 ? 64 : Math.max(1, Math.min(64, value));
+        return Math.max(1, Math.min(64, start + steps));
     }
 }

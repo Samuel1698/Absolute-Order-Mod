@@ -49,3 +49,27 @@ The publishable Fabric artifact is expected under `fabric/build/libs/` with a na
 - `feat(filters): replace quantity button with retention slider` — five-step click/drag quantity control (All, 64, 32, 16, 1) with safe preservation of older custom quantities and unit tests.
 - These patches apply **after** the first seven fork patches. They are not a port to Minecraft 26.3.
 - Multiplayer Ender Chest sync (earlier test #6), 54-slot Ender Chest compatibility, and the new manual-click integration still require in-game verification. Keep production server 26.3 untouched.
+
+## Corrective revision after 0010 — inventory priority, Push preview, continuous Keep slider
+
+1. Client inventory-filter state is now populated alongside the C2S sync so predicted inventory
+   clicks and the server's menu clicks use identical filter maps. The inventory menu intercepts
+   shift-clicks from unfiltered main slots and refills dedicated main slots first; filtered-origin
+   cursor placements into unfiltered main slots trigger refill even with an unfinished cursor stack.
+   Manually placed hotbar items are never sources for that refill.
+2. Refill uses one shared copied-stack implementation on both gameplay inventories and the Push
+   preview. The preview simulates refill, exact per-group Keep quantities, the same four container
+   deposit passes, and the post-Push sort, then displays the final predicted stacks for every
+   changed slot. It doesn't mutate inventory while the player hovers the button.
+3. Keep slider now permits integer values 1–64, with marked reference values All, 64, 32, 16, 1
+   from left to right. Wheel over the slider adjusts by one for precise selection. All is still
+   the separate saved value 0; previously saved larger values are preserved until manually edited.
+4. Headless Java checks passed for Keep slider mapping and for inventory slot refill using Minecraft
+   stub objects (1 + 64 -> 64 + 1, Keep 1 -> 63 + 1 movable, hotbar untouched, snapshot unchanged).
+   These are NOT Gradle tests or proof of a successful full mod build. Java 25 compilation and in-game
+   testing (including expanded Ender Chests and dedicated multiplayer synchronization) remain required.
+
+Suggested regression: a filtered slot with 1 Ender Chest plus an unfiltered main slot with 64
+should preview AND actually deposit 64 with Keep: 1, leaving 1 in the filtered slot. Check
+manually moving half/full stacks out and a shift-click from an unfiltered main slot; verify
+hotbar behavior remains intentional, and compare Push hover with the final chest/inventory.
