@@ -81,3 +81,27 @@ hotbar behavior remains intentional, and compare Push hover with the final chest
 - Source review and standalone Java 21 slider mapping/detent tests passed. Full Gradle compilation with JDK 25, integration gameplay, and dedicated-server filter synchronization have **not** been verified in this environment. The target remains Minecraft **26.2**.
 
 Quick in-game regressions: (1) home slot has 1 Ender Chest, hotbar has 64: Shift-click hotbar stack; home fills to 64 and 1 stays in hotbar; (2) home slot empty, hotbar has 64: all 64 move to home; (3) home slot already full: vanilla may shift extra items into unfiltered main slots; (4) ordinary click to put items into hotbar stays intact; (5) slider detents 16/32/64 hold briefly, while dragging still selects other values and wheel fine-adjusts; (6) verify identical results on the two sides of a dedicated-server connection.
+
+## Inventory reconciliation after all player-menu clicks (patch 0016)
+
+- Previously, the player-inventory refill hook only recognized a PICKUP that originated in a
+  filtered main slot, followed by a PICKUP placement into an unfiltered main slot. Shift-clicks,
+  swaps, quick crafting, or moving stacks that already sat in unfiltered slots could bypass it.
+  A later unrelated manual click sometimes repaired the scattered stacks by accident.
+- The player inventory menu now runs the existing, shared refill policy after **every completed
+  menu click** (on both client and server). This includes all normally processed click types and
+  early-return paths; an immediate second click is no longer required to reconcile filtered slots.
+- It deliberately runs only for `InventoryMenu`: chest/container Push's synthetic click sequence
+  runs on a different menu and retains its own pre-deposit consolidation. The refill still only
+  pulls from **unfiltered main-inventory slots 9–35**. Hotbar 0–8, equipment, offhand, and other
+  filtered slots are not sources; manually arranged hotbar items remain exempt. When all filtered
+  slots for an item reach capacity, extra stacks in unfiltered slots are expected and permissible.
+- Build remains **Minecraft 26.2 / JDK 25**. In this environment the changed mixin was compiled
+  against isolated API stubs with JDK 21 and the patch was tested against the v4 source, but
+  a real Gradle build and singleplayer/multiplayer gameplay tests have NOT been performed.
+
+Regression focus: place 1 Ender Chest in a filtered main slot and 64 in an unfiltered main slot.
+Try normal click, Shift-click, swap/number-key, right-click split, quick crafting/drag, and a
+click outside the inventory. The filtered slot should promptly fill to 64 (leaving 1 outside)
+whenever those actions finish. Then move a stack deliberately into the hotbar and verify it is
+not automatically taken back. Test the Push preview/result and container deposit afterward.
