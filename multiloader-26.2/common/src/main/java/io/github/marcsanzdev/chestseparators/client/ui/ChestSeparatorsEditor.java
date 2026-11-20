@@ -149,6 +149,13 @@ public class ChestSeparatorsEditor {
 
         ChestConfigManager.getInstance().loadWorldPalette();
         loadConfigForCurrentTarget();
+        // Ender Chest filters are stored on this client, but shift-click is server-side. Attach
+        // them to the live GUI container and send them to the server whenever it opens, including
+        // after relog; dynamically sized inventories need no fixed 27/54-slot assumptions.
+        if (session.isEnderChest) {
+            syncClientInventoryWhitelists(ChestConfigManager.getInstance().chestOnlyWhitelists());
+            sendWhitelistToServer();
+        }
         requestChestWhitelistsIfNeeded();
 
         int x = accessor.getX();
@@ -820,12 +827,12 @@ public class ChestSeparatorsEditor {
 
     /**
      * Pushes the container's own filters to the server. Self-guarding: it only sends for targets the
-     * server can actually enforce and persist — real block chests/shulkers, and chest/hopper minecarts
-     * (synced by entity UUID). Ender chests, the player inventory, and other entity containers (chest
-     * boats, animals) stay local-only and are skipped here.
+     * server can actually enforce — real block chests/shulkers, chest/hopper minecarts, and the
+     * player's private Ender Chest inventory. Ender filters remain client-persisted; the server
+     * receives only a temporary copy for shift-click enforcement.
      */
     public void sendWhitelistToServer() {
-        if (session.isEnderChest || session.isPlayerInventory) return;
+        if (session.isPlayerInventory) return;
 
         var chestOnly = io.github.marcsanzdev.chestseparators.data.ChestConfigManager.getInstance()
                 .chestOnlyWhitelists();

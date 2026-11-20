@@ -208,8 +208,23 @@ public final class ModNetworking {
                         BlockState state = world.getBlockState(payload.pos());
                         boolean isEnderChest = state.getBlock() == Blocks.ENDER_CHEST;
 
-                        // Ender Chest filters are local-only (hoppers cannot access them); nothing to do here.
-                        if (isEnderChest) return;
+                        // An Ender Chest uses the player's own inventory (27 slots in vanilla, possibly
+                        // larger in a compatible inventory-expansion mod). The local filter is sent at
+                        // screen open and on edits; cache it on this player's live ender inventory so
+                        // vanilla shift-click reaches the same IWhitelistProvider rule as ordinary chests.
+                        // Do not persist it on the world block: each player's Ender Chest is private.
+                        if (isEnderChest) {
+                            Container ender = player.getEnderChestInventory();
+                            if (ender instanceof IWhitelistProvider provider) {
+                                Map<Integer, SlotWhitelist> valid = new java.util.HashMap<>();
+                                payload.whitelists().forEach((slot, wl) -> {
+                                    if (slot != null && wl != null && slot >= 0
+                                            && slot < ender.getContainerSize()) valid.put(slot, wl);
+                                });
+                                provider.setWhitelists(valid);
+                            }
+                            return;
+                        }
 
                         Container targetInventory = getChestInventorySafe(world, payload.pos());
 
