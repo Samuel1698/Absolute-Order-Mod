@@ -422,8 +422,10 @@ public final class ModNetworking {
 
         List<Candidate> candidates = collectCandidates(player, radius, throughWalls, enderWhitelists, entityWhitelists);
 
-        // 2. Deposit each stack into matching candidate slots, recording moved amounts per container.
+        // 2. Deposit only the movable portion of each source stack. Inventory filters are client-local
+        // but already synced to this server for pickup enforcement; reuse that authoritative snapshot.
         Inventory inventory = player.getInventory();
+        Map<Integer, SlotWhitelist> playerFilters = ChestSeparatorsState.INVENTORY_FILTERS.get(player.getUUID());
         // Preserve discovery order so the animation roughly mirrors inventory layout.
         Map<BlockPos, Map<Item, Integer>> moved = new java.util.LinkedHashMap<>();
         // Containers that actually received items, so only those get their groups re-sorted afterwards.
@@ -432,16 +434,20 @@ public final class ModNetworking {
         for (int i = 0; i < Inventory.INVENTORY_SIZE; i++) {
             ItemStack stack = inventory.getItem(i);
             if (stack.isEmpty()) continue;
+            int available = io.github.marcsanzdev.chestseparators.util.InventoryProtection
+                    .movableCount(inventory, playerFilters, i);
+            if (available <= 0) continue;
+            ItemStack outgoing = stack.copyWithCount(available);
             Item item = stack.getItem();
             String itemId = BuiltInRegistries.ITEM.getKey(item).toString();
 
             for (Candidate candidate : candidates) {
-                if (stack.isEmpty()) break;
+                if (outgoing.isEmpty()) break;
                 if (!containerListsItem(candidate.whitelists, itemId)) continue;
 
-                int before = stack.getCount();
-                insertRespectingFilter(candidate.inv, candidate.whitelists, stack, itemId);
-                int delta = before - stack.getCount();
+                int before = outgoing.getCount();
+                insertRespectingFilter(candidate.inv, candidate.whitelists, outgoing, itemId);
+                int delta = before - outgoing.getCount();
                 if (delta > 0) {
                     candidate.inv.setChanged();
                     touched.add(candidate);
@@ -449,6 +455,8 @@ public final class ModNetworking {
                             .merge(item, delta, Integer::sum);
                 }
             }
+            int deposited = available - outgoing.getCount();
+            if (deposited > 0) stack.shrink(deposited);
             inventory.setItem(i, stack);
         }
 

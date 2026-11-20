@@ -1394,12 +1394,18 @@ public class ChestSeparatorsEditor {
                 net.minecraft.client.Minecraft.getInstance().gameMode;
         int syncId = accessor.getHandler().containerId;
         net.minecraft.world.entity.player.Player player = net.minecraft.client.Minecraft.getInstance().player;
+        var playerFilters = io.github.marcsanzdev.chestseparators.data.ChestConfigManager.getInstance()
+                .getPlayerInventoryFilters();
 
         int totalMovedCount = 0;
 
         for (net.minecraft.world.inventory.Slot playerSlot : accessor.getHandler().slots) {
             if (playerSlot.container instanceof net.minecraft.world.entity.player.Inventory && playerSlot.hasItem()) {
-                net.minecraft.world.item.ItemStack stackToMove = playerSlot.getItem().copy();
+                int movable = io.github.marcsanzdev.chestseparators.util.InventoryProtection
+                        .movableCount(player.getInventory(), playerFilters, playerSlot.getContainerSlot());
+                if (movable <= 0) continue;
+                int reserved = playerSlot.getItem().getCount() - movable;
+                net.minecraft.world.item.ItemStack stackToMove = playerSlot.getItem().copyWithCount(movable);
                 String itemId = net.minecraft.core.registries.BuiltInRegistries.ITEM
                         .getKey(stackToMove.getItem())
                         .toString();
@@ -1436,6 +1442,14 @@ public class ChestSeparatorsEditor {
                                         net.minecraft.world.inventory.ContainerInput.PICKUP,
                                         player);
                                 pickedUp = true;
+                                // Leave the protected part in its original slot BEFORE depositing.
+                                // Right-click on the emptied source places one item per click, allowing
+                                // an exact retained count without adding a new server packet.
+                                for (int keep = 0; keep < reserved; keep++) {
+                                    interactionManager.handleContainerInput(
+                                            syncId, playerSlot.index, 1,
+                                            net.minecraft.world.inventory.ContainerInput.PICKUP, player);
+                                }
                             }
                             interactionManager.handleContainerInput(
                                     syncId, targetSlot.index, 0, net.minecraft.world.inventory.ContainerInput.PICKUP, player);
@@ -1792,15 +1806,21 @@ public class ChestSeparatorsEditor {
         var whitelists = io.github.marcsanzdev.chestseparators.data.ChestConfigManager.getInstance()
                 .getCurrentWhitelists();
 
+        var invFiltersForProtection = io.github.marcsanzdev.chestseparators.data.ChestConfigManager
+                .getInstance().getPlayerInventoryFilters();
         for (net.minecraft.world.inventory.Slot playerSlot : accessor.getHandler().slots) {
             if (playerSlot.container instanceof net.minecraft.world.entity.player.Inventory && playerSlot.hasItem()) {
+                int movable = io.github.marcsanzdev.chestseparators.util.InventoryProtection.movableCount(
+                        net.minecraft.client.Minecraft.getInstance().player.getInventory(),
+                        invFiltersForProtection, playerSlot.getContainerSlot());
+                if (movable <= 0) continue;
                 net.minecraft.world.item.ItemStack pristineStack = playerSlot.getItem();
                 String itemId = net.minecraft.core.registries.BuiltInRegistries.ITEM
                         .getKey(pristineStack.getItem())
                         .toString();
 
-                int remaining = pristineStack.getCount();
-                int initialCount = remaining;
+                int remaining = movable;
+                int initialCount = pristineStack.getCount();
 
                 // 4-pass priority system mirrors the logic in executeDeposit.
                 remaining = simulateDepositPass(whitelists, pristineStack, itemId, remaining, true, false);
@@ -1814,8 +1834,8 @@ public class ChestSeparatorsEditor {
                 if (remaining > 0 && shift)
                     remaining = simulateDepositPass(whitelists, pristineStack, itemId, remaining, false, true);
 
-                if (remaining < initialCount) {
-                    previewSourceRemaining.put(playerSlot.index, remaining);
+                if (remaining < movable) {
+                    previewSourceRemaining.put(playerSlot.index, initialCount - (movable - remaining));
                 }
             }
         }
