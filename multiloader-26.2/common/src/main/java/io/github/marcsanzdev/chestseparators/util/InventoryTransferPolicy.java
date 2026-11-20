@@ -9,6 +9,11 @@ public final class InventoryTransferPolicy {
      * A target of zero is the legacy behaviour: keep all items in the filtered slot.
      * Positive targets are retained across the group's earlier slots, not once per slot.
      */
+    /** Remaining room under a filter target; zero means there is no quantity cap on inbound pulls. */
+    public static int inboundRoom(int targetCount, int currentlyHeld) {
+        return targetCount <= 0 ? Integer.MAX_VALUE : Math.max(0, targetCount - Math.max(0, currentlyHeld));
+    }
+
     public static int movableCount(int stackCount, int targetCount, int earlierMatchingCount) {
         if (stackCount <= 0) return 0;
         if (targetCount <= 0) return 0;

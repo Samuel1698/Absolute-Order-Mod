@@ -612,7 +612,9 @@ public final class ModNetworking {
             int max = Math.min(inv.getMaxStackSize(dest), dest.getMaxStackSize());
             int space = max - dest.getCount();
             if (space <= 0) continue;
-            int move = Math.min(space, stack.getCount());
+            int move = Math.min(Math.min(space, stack.getCount()),
+                    availableInboundRoom(inv, whitelists, slot, itemId));
+            if (move <= 0) continue;
             dest.grow(move);
             stack.shrink(move);
         }
@@ -631,10 +633,34 @@ public final class ModNetworking {
         for (int slot : emptySlots) {
             if (stack.isEmpty()) break;
             int max = Math.min(inv.getMaxStackSize(stack), stack.getMaxStackSize());
-            int move = Math.min(max, stack.getCount());
+            int move = Math.min(Math.min(max, stack.getCount()),
+                    availableInboundRoom(inv, whitelists, slot, itemId));
+            if (move <= 0) continue;
             inv.setItem(slot, stack.copyWithCount(move));
             stack.shrink(move);
         }
+    }
+
+    /** The per-group inbound cap applies only when filling the player's inventory, not storage. */
+    private static int availableInboundRoom(
+            Container inv, Map<Integer, SlotWhitelist> whitelists, int destSlot, String itemId) {
+        if (!(inv instanceof Inventory) || whitelists == null) return Integer.MAX_VALUE;
+        SlotWhitelist filter = whitelists.get(destSlot);
+        if (filter == null || filter.targetCount() <= 0 || filter.groupId() == null) return Integer.MAX_VALUE;
+
+        int held = 0;
+        for (Map.Entry<Integer, SlotWhitelist> entry : whitelists.entrySet()) {
+            if (!filter.groupId().equals(entry.getValue().groupId())
+                    || !entry.getValue().allowedItems().contains(itemId)) continue;
+            int slot = entry.getKey();
+            if (slot < 0 || slot >= inv.getContainerSize()) continue;
+            ItemStack existing = inv.getItem(slot);
+            if (!existing.isEmpty() && BuiltInRegistries.ITEM.getKey(existing.getItem()).toString().equals(itemId)) {
+                held += existing.getCount();
+            }
+        }
+        return io.github.marcsanzdev.chestseparators.util.InventoryTransferPolicy
+                .inboundRoom(filter.targetCount(), held);
     }
 
     /**

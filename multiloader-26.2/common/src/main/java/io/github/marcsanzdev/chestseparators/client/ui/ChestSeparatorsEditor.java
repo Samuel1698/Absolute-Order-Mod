@@ -1706,6 +1706,9 @@ public class ChestSeparatorsEditor {
             int canAdd = maxC - current;
             if (canAdd <= 0) continue;
             int add = Math.min(left, canAdd);
+            if (!shift) add = Math.min(add,
+                    previewInboundRoom(playerSlots, invFilters, ps.getContainerSlot(), itemId));
+            if (add <= 0) continue;
             if (proj == null) previewTargetIncoming.put(ps.index, stack.copyWithCount(add));
             else proj.setCount(proj.getCount() + add);
             left -= add;
@@ -1730,6 +1733,8 @@ public class ChestSeparatorsEditor {
             for (net.minecraft.world.inventory.Slot ps : emptyFiltered) {
                 if (left <= 0) break;
                 int add = Math.min(left, maxC);
+                add = Math.min(add, previewInboundRoom(playerSlots, invFilters, ps.getContainerSlot(), itemId));
+                if (add <= 0) continue;
                 previewTargetIncoming.put(ps.index, stack.copyWithCount(add));
                 left -= add;
             }
@@ -1748,6 +1753,31 @@ public class ChestSeparatorsEditor {
     }
 
     /** Mirror of PlayerInventoryFilterMixin#getEmptySlot: preferred filtered empty slot, else first unreserved. */
+    /** Client-side mirror of ModNetworking.availableInboundRoom (includes projected incoming items). */
+    private int previewInboundRoom(
+            java.util.List<net.minecraft.world.inventory.Slot> playerSlots,
+            java.util.Map<Integer, io.github.marcsanzdev.chestseparators.data.SlotWhitelist> filters,
+            int destIndex, String itemId) {
+        if (filters == null) return Integer.MAX_VALUE;
+        var filter = filters.get(destIndex);
+        if (filter == null || filter.targetCount() <= 0 || filter.groupId() == null) return Integer.MAX_VALUE;
+
+        int held = 0;
+        for (net.minecraft.world.inventory.Slot s : playerSlots) {
+            var otherFilter = filters.get(s.getContainerSlot());
+            if (otherFilter == null || !filter.groupId().equals(otherFilter.groupId())
+                    || !otherFilter.allowedItems().contains(itemId)) continue;
+            var existing = s.getItem();
+            if (!existing.isEmpty() && net.minecraft.core.registries.BuiltInRegistries.ITEM
+                    .getKey(existing.getItem()).toString().equals(itemId)) held += existing.getCount();
+            var pending = previewTargetIncoming.get(s.index);
+            if (pending != null && !pending.isEmpty() && net.minecraft.core.registries.BuiltInRegistries.ITEM
+                    .getKey(pending.getItem()).toString().equals(itemId)) held += pending.getCount();
+        }
+        return io.github.marcsanzdev.chestseparators.util.InventoryTransferPolicy
+                .inboundRoom(filter.targetCount(), held);
+    }
+
     private net.minecraft.world.inventory.Slot findPreviewEmptySlot(
             java.util.List<net.minecraft.world.inventory.Slot> playerSlots,
             java.util.Map<Integer, io.github.marcsanzdev.chestseparators.data.SlotWhitelist> invFilters,
