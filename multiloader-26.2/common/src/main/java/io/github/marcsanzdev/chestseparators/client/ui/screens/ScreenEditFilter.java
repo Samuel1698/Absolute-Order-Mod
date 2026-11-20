@@ -33,7 +33,7 @@ public class ScreenEditFilter extends AbstractEditorScreen {
 
     private final FilterPanelRenderer panelRenderer;
     private final FilterClickHandler clickHandler;
-    private ActionIconButtonWidget quantityButton;
+    private io.github.marcsanzdev.chestseparators.client.ui.widgets.InventoryRetentionSlider quantitySlider;
 
     public ScreenEditFilter(ChestSeparatorsEditor editor) {
         super(editor);
@@ -44,6 +44,15 @@ public class ScreenEditFilter extends AbstractEditorScreen {
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         return clickHandler.onMouseClicked(mouseX, mouseY, button);
+    }
+
+    @Override
+    public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
+        return quantitySlider != null && quantitySlider.mouseDragged(mouseX, button);
+    }
+
+    public void stopRetentionDrag() {
+        if (quantitySlider != null) quantitySlider.stopDrag();
     }
 
     @Override
@@ -667,28 +676,21 @@ public class ScreenEditFilter extends AbstractEditorScreen {
             widgets.add(btnHopper);
         }
 
-        // Inventory filter retention uses the 12-pixel gap between the Pick Up rule and Save.
-        // 0 means the original behaviour (protect every matching item in filtered slots).
+        // A compact five-stop slider fits the existing 12-pixel gap before Save.
+        // All (0) is a distinct legacy setting, NOT the same as keeping exactly 64.
         if (invFilter) {
-            quantityButton = new ActionIconButtonWidget(
-                    btnX, mainY + 154, btnW, 11, "Keep: All", null, UiColors.SURFACE_DARK,
-                    () -> {
-                        long window = Minecraft.getInstance().getWindow().handle();
-                        boolean shift = org.lwjgl.glfw.GLFW.glfwGetKey(window, org.lwjgl.glfw.GLFW.GLFW_KEY_LEFT_SHIFT)
-                                        == org.lwjgl.glfw.GLFW.GLFW_PRESS
-                                || org.lwjgl.glfw.GLFW.glfwGetKey(window, org.lwjgl.glfw.GLFW.GLFW_KEY_RIGHT_SHIFT)
-                                        == org.lwjgl.glfw.GLFW.GLFW_PRESS;
-                        boolean ctrl = org.lwjgl.glfw.GLFW.glfwGetKey(window, org.lwjgl.glfw.GLFW.GLFW_KEY_LEFT_CONTROL)
-                                        == org.lwjgl.glfw.GLFW.GLFW_PRESS
-                                || org.lwjgl.glfw.GLFW.glfwGetKey(window, org.lwjgl.glfw.GLFW.GLFW_KEY_RIGHT_CONTROL)
-                                        == org.lwjgl.glfw.GLFW.GLFW_PRESS;
-                        if (shift && ctrl) session.targetCount = 0;
-                        else if (shift) session.targetCount = Math.max(0, session.targetCount - 1);
-                        else session.targetCount = Math.min(9999, session.targetCount + (ctrl ? 16 : 1));
-                        editor.playClickSound(1.0f);
+            quantitySlider = new io.github.marcsanzdev.chestseparators.client.ui.widgets.InventoryRetentionSlider(
+                    btnX, mainY + 154, btnW, 11,
+                    () -> session.targetCount,
+                    value -> {
+                        if (session.targetCount != value) {
+                            session.targetCount = value;
+                            editor.playClickSound(1.0f);
+                        }
                     });
-            quantityButton.tooltipText = "Keep on deposit: click +1, Shift-click -1, Ctrl-click +16, Ctrl+Shift-click reset";
-            widgets.add(quantityButton);
+            widgets.add(quantitySlider);
+        } else {
+            quantitySlider = null;
         }
 
         // Group 3 (Actions) — stacked full-width in visual order: Save, Delete, Cancel.
@@ -905,9 +907,6 @@ public class ScreenEditFilter extends AbstractEditorScreen {
 
     private void updateWidgetStates(int mouseX, int mouseY) {
         if (widgets.isEmpty()) return;
-        if (quantityButton != null) {
-            quantityButton.label = session.targetCount == 0 ? "Keep: All" : "Keep: " + session.targetCount;
-        }
 
         boolean isSearching =
                 editor.searchBox != null && !editor.searchBox.getValue().isEmpty();
