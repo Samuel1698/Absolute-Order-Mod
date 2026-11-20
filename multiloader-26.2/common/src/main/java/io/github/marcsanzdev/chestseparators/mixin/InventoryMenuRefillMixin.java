@@ -4,7 +4,6 @@ import io.github.marcsanzdev.chestseparators.ChestSeparatorsState;
 import io.github.marcsanzdev.chestseparators.data.SlotWhitelist;
 import io.github.marcsanzdev.chestseparators.util.InventorySlotRefill;
 import java.util.Map;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
@@ -30,7 +29,7 @@ public abstract class InventoryMenuRefillMixin {
     @Inject(method = "clicked", at = @At("HEAD"))
     private void chestseparators$trackFilteredSource(
             int slotIndex, int button, ContainerInput actionType, Player player, CallbackInfo ci) {
-        if (!(player instanceof ServerPlayer)) return;
+        if (player == null) return;
         if (actionType != ContainerInput.PICKUP) {
             chestseparators$carryingFilteredMainStack = false;
             return;
@@ -43,20 +42,20 @@ public abstract class InventoryMenuRefillMixin {
         int raw = source.getContainerSlot();
         if (raw < 9 || raw >= Inventory.INVENTORY_SIZE || !source.hasItem()) return;
         Map<Integer, SlotWhitelist> filters = ChestSeparatorsState.INVENTORY_FILTERS.get(player.getUUID());
-        if (filters != null && filters.containsKey(raw)) {
-            chestseparators$carryingFilteredMainStack = true;
-        }
+        // A fresh pickup from an unrelated slot must not inherit an old filtered origin.
+        chestseparators$carryingFilteredMainStack = filters != null && filters.containsKey(raw);
     }
 
     @Inject(method = "clicked", at = @At("TAIL"))
     private void chestseparators$refillAfterDrop(
             int slotIndex, int button, ContainerInput actionType, Player player, CallbackInfo ci) {
-        if (!(player instanceof ServerPlayer serverPlayer)
+        if (player == null
                 || actionType != ContainerInput.PICKUP
                 || !chestseparators$carryingFilteredMainStack) return;
         AbstractContainerMenu menu = (AbstractContainerMenu) (Object) this;
-        if (!menu.getCarried().isEmpty()) return;
-        chestseparators$carryingFilteredMainStack = false;
+        // Partial right-click placements should refill too, even while some items stay on the cursor.
+        // Keep the origin until the cursor empties so subsequent placements of the same stack work.
+        if (menu.getCarried().isEmpty()) chestseparators$carryingFilteredMainStack = false;
         if (slotIndex < 0 || slotIndex >= menu.slots.size()) return;
         Slot target = menu.slots.get(slotIndex);
         if (!(target.container instanceof Inventory)) return;
@@ -64,6 +63,8 @@ public abstract class InventoryMenuRefillMixin {
         if (raw < 9 || raw >= Inventory.INVENTORY_SIZE) return; // manual hotbar placement stays intact
         Map<Integer, SlotWhitelist> filters = ChestSeparatorsState.INVENTORY_FILTERS.get(player.getUUID());
         if (filters == null || filters.containsKey(raw)) return;
-        if (InventorySlotRefill.refill(serverPlayer.getInventory(), filters)) menu.broadcastChanges();
+        if (InventorySlotRefill.refill(player.getInventory(), filters) && !player.level().isClientSide()) {
+            menu.broadcastChanges();
+        }
     }
 }

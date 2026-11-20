@@ -6,6 +6,8 @@ import java.util.Map;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.entity.player.Inventory;
+import io.github.marcsanzdev.chestseparators.util.InventorySlotRefill;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.InventoryMenu;
 import net.minecraft.world.inventory.Slot;
@@ -25,6 +27,40 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  */
 @Mixin(InventoryMenu.class)
 public abstract class PlayerScreenHandlerFallbackMixin {
+
+    /**
+     * Vanilla InventoryMenu.quickMoveStack sends main-inventory items straight to the hotbar,
+     * never consulting dedicated MAIN filters. Give matching filtered main slots first refusal.
+     * Run on BOTH logical sides to keep predicted clicks aligned with the server.
+     */
+    @Inject(method = "quickMoveStack", at = @At("HEAD"), cancellable = true)
+    private void chestseparators$preferFilteredMainOnShift(
+            Player player, int slotIndex, CallbackInfoReturnable<ItemStack> cir) {
+        if (player == null) return;
+        AbstractContainerMenu menu = (AbstractContainerMenu) (Object) this;
+        if (slotIndex < 0 || slotIndex >= menu.slots.size()) return;
+        Slot sourceSlot = menu.slots.get(slotIndex);
+        if (!(sourceSlot.container instanceof Inventory)) return;
+        int raw = sourceSlot.getContainerSlot();
+        if (raw < 9 || raw >= Inventory.INVENTORY_SIZE || !sourceSlot.hasItem()) return;
+
+        Map<Integer, SlotWhitelist> filters = ChestSeparatorsState.INVENTORY_FILTERS.get(player.getUUID());
+        if (filters == null || filters.isEmpty() || filters.containsKey(raw)) return;
+        ItemStack source = sourceSlot.getItem();
+        String id = BuiltInRegistries.ITEM.getKey(source.getItem()).toString();
+        boolean dedicated = filters.entrySet().stream().anyMatch(e ->
+                e.getKey() >= 9 && e.getKey() < Inventory.INVENTORY_SIZE
+                        && e.getValue().allowedItems().contains(id));
+        if (!dedicated) return;
+
+        ItemStack original = source.copy();
+        boolean changed = InventorySlotRefill.refill(player.getInventory(), filters);
+        if (!changed) return;
+        if (!player.level().isClientSide()) menu.broadcastChanges();
+        // If all items moved into dedicated main slots, suppress vanilla's hotbar fallback.
+        // Otherwise vanilla can shift-move the surplus in the source slot as usual.
+        if (player.getInventory().getItem(raw).isEmpty()) cir.setReturnValue(original);
+    }
 
     @Inject(method = "quickMoveStack", at = @At("RETURN"), cancellable = true)
     private void chestseparators$armorFallback(Player player, int slotIndex, CallbackInfoReturnable<ItemStack> cir) {

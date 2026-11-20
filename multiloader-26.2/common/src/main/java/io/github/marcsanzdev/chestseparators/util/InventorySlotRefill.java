@@ -1,79 +1,100 @@
 package io.github.marcsanzdev.chestseparators.util;
 
 import io.github.marcsanzdev.chestseparators.data.SlotWhitelist;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
+import java.util.function.ToIntFunction;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
 
 /**
- * Rehomes loose items in the main inventory into matching filtered main-inventory slots.
- * The hotbar (0-8), offhand, armor, and all other reserved source slots are deliberately untouched.
- * Only an unfiltered MAIN source can be consumed; a full home slot leaves surplus where it is.
- * This is separate from retention quotas: fill to the item's stack limit first, then the
- * subsequent transfer may move the portion exceeding the group's configured Keep count.
+ * Refills dedicated MAIN inventory slots from unfiltered MAIN slots, without touching hotbar,
+ * armor, offhand or other filtered sources. The same algorithm runs on an inventory snapshot
+ * for the Push preview, so it can accurately predict the action without mutating live items.
  */
 public final class InventorySlotRefill {
     private InventorySlotRefill() {}
 
     public static boolean refill(Inventory inventory, Map<Integer, SlotWhitelist> filters) {
         if (filters == null || filters.isEmpty()) return false;
+        List<ItemStack> projected = new ArrayList<>(Inventory.INVENTORY_SIZE);
+        for (int i = 0; i < Inventory.INVENTORY_SIZE; i++) {
+            projected.add(inventory.getItem(i).copy());
+        }
+        if (!refillStacks(projected, filters, inventory::getMaxStackSize)) return false;
+        for (int i = 9; i < Inventory.INVENTORY_SIZE; i++) {
+            ItemStack before = inventory.getItem(i);
+            ItemStack after = projected.get(i);
+            if (before.getCount() != after.getCount()
+                    || !ItemStack.isSameItemSameComponents(before, after)) {
+                inventory.setItem(i, after);
+            }
+        }
+        inventory.setChanged();
+        return true;
+    }
+
+    /** Mutates ONLY the supplied copied stacks. Raw player inventory indices are used throughout. */
+    public static boolean refillStacks(
+            List<ItemStack> stacks,
+            Map<Integer, SlotWhitelist> filters,
+            ToIntFunction<ItemStack> inventoryMax) {
+        if (filters == null || filters.isEmpty() || stacks.size() < Inventory.INVENTORY_SIZE) return false;
         boolean changed = false;
-        // Pass 1 completes existing filtered stacks before using vacant filtered slots.
+        // First finish matching, partly-filled filter slots, then occupy empty filter slots.
         for (int target = 9; target < Inventory.INVENTORY_SIZE; target++) {
             SlotWhitelist filter = filters.get(target);
             if (filter == null || filter.allowedItems().isEmpty()) continue;
-            ItemStack home = inventory.getItem(target);
+            ItemStack home = stacks.get(target);
             if (home.isEmpty() || !filter.allowedItems().contains(itemId(home))) continue;
-            changed |= topUp(inventory, filters, target, home);
+            changed |= topUp(stacks, filters, target, home, inventoryMax);
         }
-        // Pass 2 fills empty dedicated slots according to the filter's ordered item preferences.
         for (int target = 9; target < Inventory.INVENTORY_SIZE; target++) {
             SlotWhitelist filter = filters.get(target);
-            if (filter == null || filter.allowedItems().isEmpty() || !inventory.getItem(target).isEmpty()) continue;
+            if (filter == null || filter.allowedItems().isEmpty() || !stacks.get(target).isEmpty()) continue;
             for (String wanted : filter.allowedItems()) {
-                int source = findSource(inventory, filters, target, wanted, null);
+                int source = findSource(stacks, filters, target, wanted, null);
                 if (source < 0) continue;
-                ItemStack sourceStack = inventory.getItem(source);
-                inventory.setItem(target, sourceStack.copy());
-                inventory.setItem(source, ItemStack.EMPTY);
+                stacks.set(target, stacks.get(source).copy());
+                stacks.set(source, ItemStack.EMPTY);
                 changed = true;
-                changed |= topUp(inventory, filters, target, inventory.getItem(target));
+                changed |= topUp(stacks, filters, target, stacks.get(target), inventoryMax);
                 break;
             }
         }
-        if (changed) inventory.setChanged();
         return changed;
     }
 
-    private static boolean topUp(Inventory inventory, Map<Integer, SlotWhitelist> filters,
-            int target, ItemStack home) {
+    private static boolean topUp(List<ItemStack> stacks, Map<Integer, SlotWhitelist> filters,
+            int target, ItemStack home, ToIntFunction<ItemStack> inventoryMax) {
         boolean changed = false;
-        String itemId = itemId(home);
-        int limit = Math.min(home.getMaxStackSize(), inventory.getMaxStackSize(home));
+        String id = itemId(home);
+        int limit = Math.min(home.getMaxStackSize(), inventoryMax.applyAsInt(home));
         while (home.getCount() < limit) {
-            int source = findSource(inventory, filters, target, itemId, home);
+            int source = findSource(stacks, filters, target, id, home);
             if (source < 0) break;
-            ItemStack extra = inventory.getItem(source);
+            ItemStack extra = stacks.get(source);
             int take = Math.min(limit - home.getCount(), extra.getCount());
             if (take <= 0) break;
             home.grow(take);
             extra.shrink(take);
-            inventory.setItem(source, extra.isEmpty() ? ItemStack.EMPTY : extra);
-            inventory.setItem(target, home);
+            stacks.set(source, extra.isEmpty() ? ItemStack.EMPTY : extra);
+            stacks.set(target, home);
             changed = true;
         }
         return changed;
     }
 
-    private static int findSource(Inventory inventory, Map<Integer, SlotWhitelist> filters,
+    private static int findSource(List<ItemStack> stacks, Map<Integer, SlotWhitelist> filters,
             int target, String itemId, ItemStack matching) {
-        for (int slot = 9; slot < Inventory.INVENTORY_SIZE; slot++) {
-            if (slot == target || filters.containsKey(slot)) continue;
-            ItemStack candidate = inventory.getItem(slot);
+        for (int raw = 9; raw < Inventory.INVENTORY_SIZE; raw++) {
+            if (raw == target || filters.containsKey(raw)) continue;
+            ItemStack candidate = stacks.get(raw);
             if (candidate.isEmpty() || !itemId(candidate).equals(itemId)) continue;
             if (matching != null && !ItemStack.isSameItemSameComponents(matching, candidate)) continue;
-            return slot;
+            return raw;
         }
         return -1;
     }
