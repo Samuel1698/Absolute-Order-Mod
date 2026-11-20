@@ -17,6 +17,7 @@ import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.inventory.AbstractContainerMenu;
+import org.lwjgl.sdl.SDLMouse;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
@@ -199,12 +200,27 @@ public abstract class GenericContainerScreenMixin extends Screen {
     }
 
     // ---- Mouse routing (replaces the old Fabric ScreenMouseEvents registration) ----
+    // The editor's internal handlers still use the pre-26.3/GLFW convention:
+    // left = 0, right = 1, middle = 2. Minecraft 26.3 sends SDL buttons:
+    // left = 1, middle = 2, right = 3. Convert at the boundary so all widgets,
+    // painting tools, and mouse-release/drag behavior share the same semantics.
+    // Unknown buttons stay unknown rather than accidentally invoking left-click actions.
+    @Unique
+    private static int chestseparators$legacyMouseButton(int sdlButton) {
+        return switch (sdlButton) {
+            case SDLMouse.SDL_BUTTON_LEFT -> 0;
+            case SDLMouse.SDL_BUTTON_RIGHT -> 1;
+            case SDLMouse.SDL_BUTTON_MIDDLE -> 2;
+            default -> -1;
+        };
+    }
+
     // Each editor handler returns the Fabric-style "allow" boolean: false means the editor consumed the
     // event, so we cancel the vanilla handler by returning true (handled).
 
     @Inject(method = "mouseClicked", at = @At("HEAD"), cancellable = true)
     private void onMouseClicked(MouseButtonEvent event, boolean doubleClick, CallbackInfoReturnable<Boolean> cir) {
-        if (this.editor != null && !this.editor.inputHandler.handleClick(event.x(), event.y(), event.button())) {
+        if (this.editor != null && !this.editor.inputHandler.handleClick(event.x(), event.y(), chestseparators$legacyMouseButton(event.button()))) {
             cir.setReturnValue(true);
         }
     }
@@ -212,7 +228,7 @@ public abstract class GenericContainerScreenMixin extends Screen {
     @Inject(method = "mouseReleased", at = @At("HEAD"), cancellable = true)
     private void onMouseReleased(MouseButtonEvent event, CallbackInfoReturnable<Boolean> cir) {
         if (this.editor != null
-                && !this.editor.inputHandler.onMouseReleased(event.x(), event.y(), event.button())) {
+                && !this.editor.inputHandler.onMouseReleased(event.x(), event.y(), chestseparators$legacyMouseButton(event.button()))) {
             cir.setReturnValue(true);
         }
     }
