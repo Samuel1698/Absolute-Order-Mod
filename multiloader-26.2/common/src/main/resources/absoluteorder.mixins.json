@@ -13,6 +13,7 @@
     "ChestBoatEntityMixin",
     "DoubleInventoryMixin",
     "HopperBlockEntityMixin",
+    "ItemEntityPickupContextMixin",
     "LootableContainerBlockEntityMixin",
     "PlayerInventoryFilterMixin",
     "PlayerScreenHandlerFallbackMixin",
