@@ -18,7 +18,7 @@ java -version
 ./gradlew :common:test :fabric:build --no-daemon
 ```
 
-The publishable Fabric artifact is expected under `fabric/build/libs/` with a name like `AbsoluteOrder-2.0.0-noire.1-fabric-mc26.2.jar`. Replace the old mod JAR; do NOT run both together. Install the fork on **both** the Fabric client and dedicated server for filter synchronization. This is *not* a Minecraft 26.3 build.
+The publishable Fabric artifact is expected under `fabric/build/libs/` with a name like `AbsoluteOrder-2.0.0-fork.1-fabric-mc26.2.jar`. Replace the old mod JAR; do NOT run both together. Install the fork on **both** the Fabric client and dedicated server for filter synchronization. This is *not* a Minecraft 26.3 build.
 
 ## Current verification
 

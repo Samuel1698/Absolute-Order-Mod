@@ -1752,7 +1752,6 @@ public class ChestSeparatorsEditor {
         return amount - left;
     }
 
-    /** Mirror of PlayerInventoryFilterMixin#getEmptySlot: preferred filtered empty slot, else first unreserved. */
     /** Client-side mirror of ModNetworking.availableInboundRoom (includes projected incoming items). */
     private int previewInboundRoom(
             java.util.List<net.minecraft.world.inventory.Slot> playerSlots,
@@ -1778,6 +1777,7 @@ public class ChestSeparatorsEditor {
                 .inboundRoom(filter.targetCount(), held);
     }
 
+    /** Mirror of PlayerInventoryFilterMixin#getEmptySlot: preferred filtered empty slot, else first unreserved. */
     private net.minecraft.world.inventory.Slot findPreviewEmptySlot(
             java.util.List<net.minecraft.world.inventory.Slot> playerSlots,
             java.util.Map<Integer, io.github.marcsanzdev.chestseparators.data.SlotWhitelist> invFilters,
