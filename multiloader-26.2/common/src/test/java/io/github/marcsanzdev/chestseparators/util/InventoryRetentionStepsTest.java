@@ -25,6 +25,20 @@ class InventoryRetentionStepsTest {
         }
     }
 
+    @Test void magnetOnlyEngagesNearStackMarks() {
+        double width = 96;
+        for (int stop : new int[] {16, 32, 64}) {
+            double at = InventoryRetentionSteps.fractionForValue(stop);
+            assertEquals(stop, InventoryRetentionSteps.detentNearFraction(at, width, 2.0));
+            assertEquals(stop, InventoryRetentionSteps.detentNearFraction(at + 1.5 / width, width, 2.0));
+            assertEquals(-1, InventoryRetentionSteps.detentNearFraction(at + 2.5 / width, width, 2.0));
+            assertEquals(stop, InventoryRetentionSteps.detentNearFraction(at + 3.5 / width, width, 4.0));
+            assertEquals(-1, InventoryRetentionSteps.detentNearFraction(at + 4.5 / width, width, 4.0));
+        }
+        assertEquals(-1, InventoryRetentionSteps.detentNearFraction(0, width, 2.0));
+        assertEquals(-1, InventoryRetentionSteps.detentNearFraction(1, width, 2.0));
+    }
+
     @Test void savedCustomAmountsRemainUnchangedUntilEdited() {
         assertEquals(0.0, InventoryRetentionSteps.fractionForValue(0));
         assertEquals(0.25, InventoryRetentionSteps.fractionForValue(999));

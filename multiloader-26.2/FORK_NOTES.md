@@ -73,3 +73,11 @@ Suggested regression: a filtered slot with 1 Ender Chest plus an unfiltered main
 should preview AND actually deposit 64 with Keep: 1, leaving 1 in the filtered slot. Check
 manually moving half/full stacks out and a shift-click from an unfiltered main slot; verify
 hotbar behavior remains intentional, and compare Push hover with the final chest/inventory.
+
+## Follow-up: hotbar shift-click priority and magnetic Keep slider (patches 0014–0015)
+
+- Explicitly **Shift-clicking FROM the hotbar** in the vanilla player inventory screen now tries matching filtered **main** inventory slots before any unrelated main slot. It finishes existing identical home stacks first, then uses empty home slots, honoring group priorities. If the home stack is 1 and the hotbar has 64 identical items, the home becomes 64 and the remaining 1 stays in the hotbar *for that click*; it will not immediately spill into an unfiltered main slot. If all matching home slots are full, vanilla shift-click behavior is unchanged. This is intentionally different from a normal manual click placing items **INTO** the hotbar, which continues to be allowed. Both logical sides execute the same quick-move path for client prediction/server authority.
+- Keep quantities still support **every integer 1–64** and the separate `All` setting. While dragging, 16/32/64 engage a 2-pixel magnetic zone and hold until the mouse is more than 4 pixels away (the widget's own GUI coordinate system). Mouse wheel still changes by exactly one. The saved value format is unchanged.
+- Source review and standalone Java 21 slider mapping/detent tests passed. Full Gradle compilation with JDK 25, integration gameplay, and dedicated-server filter synchronization have **not** been verified in this environment. The target remains Minecraft **26.2**.
+
+Quick in-game regressions: (1) home slot has 1 Ender Chest, hotbar has 64: Shift-click hotbar stack; home fills to 64 and 1 stays in hotbar; (2) home slot empty, hotbar has 64: all 64 move to home; (3) home slot already full: vanilla may shift extra items into unfiltered main slots; (4) ordinary click to put items into hotbar stays intact; (5) slider detents 16/32/64 hold briefly, while dragging still selects other values and wheel fine-adjusts; (6) verify identical results on the two sides of a dedicated-server connection.

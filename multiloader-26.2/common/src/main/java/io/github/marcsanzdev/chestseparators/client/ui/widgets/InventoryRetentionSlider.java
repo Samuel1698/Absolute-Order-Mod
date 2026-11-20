@@ -11,6 +11,12 @@ public final class InventoryRetentionSlider extends CustomWidget {
     private final IntSupplier current;
     private final IntConsumer update;
     private boolean dragging;
+    private int heldDetent = -1;
+
+    // A short magnetic pull onto stack-size marks, followed by a slightly wider release
+    // threshold, makes 16/32/64 easy to hit without changing their saved numeric values.
+    private static final double DETENT_ENTER_PX = 2.0;
+    private static final double DETENT_RELEASE_PX = 4.0;
 
     public InventoryRetentionSlider(int x, int y, int width, int height,
             IntSupplier current, IntConsumer update) {
@@ -24,6 +30,7 @@ public final class InventoryRetentionSlider extends CustomWidget {
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         if (button != 0 || isDisabled || !isHovering(mouseX, mouseY)) return false;
         dragging = true;
+        heldDetent = -1;
         updateFromMouse(mouseX);
         return true;
     }
@@ -43,6 +50,7 @@ public final class InventoryRetentionSlider extends CustomWidget {
 
     public void stopDrag() {
         dragging = false;
+        heldDetent = -1;
     }
 
     private int trackStart() {
@@ -56,7 +64,22 @@ public final class InventoryRetentionSlider extends CustomWidget {
     private void updateFromMouse(double mouseX) {
         int span = Math.max(1, trackEnd() - trackStart());
         double fraction = Math.max(0, Math.min(1, (mouseX - trackStart()) / span));
-        update.accept(io.github.marcsanzdev.chestseparators.util.InventoryRetentionSteps.valueAtFraction(fraction));
+        // Stay on an engaged detent until the pointer moves farther away than the
+        // entrance radius; this avoids jitter around 16/32/64 while dragging.
+        if (heldDetent >= 0) {
+            int stillHeld = io.github.marcsanzdev.chestseparators.util.InventoryRetentionSteps
+                    .detentNearFraction(fraction, span, DETENT_RELEASE_PX);
+            if (stillHeld == heldDetent) {
+                update.accept(heldDetent);
+                return;
+            }
+            heldDetent = -1;
+        }
+        heldDetent = io.github.marcsanzdev.chestseparators.util.InventoryRetentionSteps
+                .detentNearFraction(fraction, span, DETENT_ENTER_PX);
+        update.accept(heldDetent >= 0
+                ? heldDetent
+                : io.github.marcsanzdev.chestseparators.util.InventoryRetentionSteps.valueAtFraction(fraction));
     }
 
     @Override

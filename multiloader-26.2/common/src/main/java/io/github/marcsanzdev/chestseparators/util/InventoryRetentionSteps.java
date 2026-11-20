@@ -37,6 +37,23 @@ public final class InventoryRetentionSteps {
         return 0.75 + (16 - value) / 15.0 * 0.25;
     }
 
+    /**
+     * Return the 64/32/16 stack-size detent nearest the pointer, or -1 outside the
+     * requested pixel radius. All and 1 remain ordinary endpoints rather than magnetic
+     * marks. Callers use a smaller radius to enter a detent than to leave it (hysteresis).
+     * Actual values between detents are still selectable with dragging or the wheel.
+     */
+    public static int detentNearFraction(double fraction, double trackWidth, double radiusPixels) {
+        if (trackWidth <= 0 || radiusPixels < 0) return -1;
+        double pointerX = Math.max(0.0, Math.min(1.0, fraction)) * trackWidth;
+        for (int value : new int[] {64, 32, 16}) {
+            if (Math.abs(pointerX - fractionForValue(value) * trackWidth) <= radiusPixels) {
+                return value;
+            }
+        }
+        return -1;
+    }
+
     /** Scroll wheel gives exact counts even when the game uses a large GUI scale. */
     public static int adjustByWheel(int value, int steps) {
         if (steps == 0) return value;
