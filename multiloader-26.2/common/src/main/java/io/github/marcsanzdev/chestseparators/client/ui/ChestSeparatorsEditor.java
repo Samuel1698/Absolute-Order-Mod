@@ -718,6 +718,7 @@ public class ChestSeparatorsEditor {
 
     public void prepareFilterMenu() {
         session.currentAllowedItems.clear();
+        session.targetCount = 0;
         // The third rule is context-dependent: "Hopper" for a chest filter, "Pick Up" for an inventory
         // filter (they share the ruleHopper flag). Seed its default from the matching config option so an
         // inventory group defaults to the Pick Up default and a chest group to the Hopper default.
@@ -759,6 +760,7 @@ public class ChestSeparatorsEditor {
                             session.ruleManual = entry.getValue().allowManual();
                             session.ruleShift = entry.getValue().allowShift();
                             session.ruleHopper = entry.getValue().allowHopper();
+                            session.targetCount = Math.max(0, entry.getValue().targetCount());
                             loadedRules = true;
                         }
                     }
@@ -788,7 +790,7 @@ public class ChestSeparatorsEditor {
                             session.ruleManual,
                             session.ruleShift,
                             session.ruleHopper,
-                            0);
+                            session.targetCount);
             whitelists.put(slotIndex, wl);
         }
         ChestConfigManager.getInstance().setCurrentWhitelists(whitelists);

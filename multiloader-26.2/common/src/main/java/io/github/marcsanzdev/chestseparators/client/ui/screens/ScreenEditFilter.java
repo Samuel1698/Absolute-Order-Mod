@@ -33,6 +33,7 @@ public class ScreenEditFilter extends AbstractEditorScreen {
 
     private final FilterPanelRenderer panelRenderer;
     private final FilterClickHandler clickHandler;
+    private ActionIconButtonWidget quantityButton;
 
     public ScreenEditFilter(ChestSeparatorsEditor editor) {
         super(editor);
@@ -466,6 +467,7 @@ public class ScreenEditFilter extends AbstractEditorScreen {
         if (session.originalRuleManual != session.ruleManual) return true;
         if (session.originalRuleShift != session.ruleShift) return true;
         if (session.originalRuleHopper != session.ruleHopper) return true;
+        if (session.originalTargetCount != session.targetCount) return true;
 
         // Order is part of the filter now (it can be rearranged by dragging and is saved), so compare the
         // lists as they are: reordering alone counts as an unsaved change.
@@ -474,6 +476,7 @@ public class ScreenEditFilter extends AbstractEditorScreen {
 
     @Override
     protected void buildWidgets() {
+        quantityButton = null;
         int btnW = layout.btnW;
         int bH = layout.bH;
         int btnX = layout.rightX;
@@ -662,6 +665,30 @@ public class ScreenEditFilter extends AbstractEditorScreen {
             }
             btnHopper.texSize = 128;
             widgets.add(btnHopper);
+        }
+
+        // Inventory filter retention uses the 12-pixel gap between the Pick Up rule and Save.
+        // 0 means the original behaviour (protect every matching item in filtered slots).
+        if (invFilter) {
+            quantityButton = new ActionIconButtonWidget(
+                    btnX, mainY + 154, btnW, 11, "Keep: All", null, UiColors.SURFACE_DARK,
+                    () -> {
+                        long window = Minecraft.getInstance().getWindow().handle();
+                        boolean shift = org.lwjgl.glfw.GLFW.glfwGetKey(window, org.lwjgl.glfw.GLFW.GLFW_KEY_LEFT_SHIFT)
+                                        == org.lwjgl.glfw.GLFW.GLFW_PRESS
+                                || org.lwjgl.glfw.GLFW.glfwGetKey(window, org.lwjgl.glfw.GLFW.GLFW_KEY_RIGHT_SHIFT)
+                                        == org.lwjgl.glfw.GLFW.GLFW_PRESS;
+                        boolean ctrl = org.lwjgl.glfw.GLFW.glfwGetKey(window, org.lwjgl.glfw.GLFW.GLFW_KEY_LEFT_CONTROL)
+                                        == org.lwjgl.glfw.GLFW.GLFW_PRESS
+                                || org.lwjgl.glfw.GLFW.glfwGetKey(window, org.lwjgl.glfw.GLFW.GLFW_KEY_RIGHT_CONTROL)
+                                        == org.lwjgl.glfw.GLFW.GLFW_PRESS;
+                        if (shift && ctrl) session.targetCount = 0;
+                        else if (shift) session.targetCount = Math.max(0, session.targetCount - 1);
+                        else session.targetCount = Math.min(9999, session.targetCount + (ctrl ? 16 : 1));
+                        editor.playClickSound(1.0f);
+                    });
+            quantityButton.tooltipText = "Keep on deposit: click +1, Shift-click -1, Ctrl-click +16, Ctrl+Shift-click reset";
+            widgets.add(quantityButton);
         }
 
         // Group 3 (Actions) — stacked full-width in visual order: Save, Delete, Cancel.
@@ -878,6 +905,9 @@ public class ScreenEditFilter extends AbstractEditorScreen {
 
     private void updateWidgetStates(int mouseX, int mouseY) {
         if (widgets.isEmpty()) return;
+        if (quantityButton != null) {
+            quantityButton.label = session.targetCount == 0 ? "Keep: All" : "Keep: " + session.targetCount;
+        }
 
         boolean isSearching =
                 editor.searchBox != null && !editor.searchBox.getValue().isEmpty();
