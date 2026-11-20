@@ -1,5 +1,6 @@
 package io.github.marcsanzdev.chestseparators.client.ui.screens;
 
+import com.mojang.blaze3d.platform.InputConstants;
 import io.github.marcsanzdev.chestseparators.client.ui.ChestSeparatorsEditor;
 import io.github.marcsanzdev.chestseparators.client.ui.EditorLayout;
 import io.github.marcsanzdev.chestseparators.client.ui.EditorSessionData;
@@ -56,10 +57,7 @@ final class ColorPickerInputHandler {
         if (session.isEyedropperActive) {
             if (button == 1) {
                 session.isEyedropperActive = false;
-                org.lwjgl.glfw.GLFW.glfwSetInputMode(
-                        Minecraft.getInstance().getWindow().handle(),
-                        org.lwjgl.glfw.GLFW.GLFW_CURSOR,
-                        org.lwjgl.glfw.GLFW.GLFW_CURSOR_NORMAL);
+                org.lwjgl.sdl.SDLMouse.SDL_ShowCursor();
                 editor.playClickSound(0.8f);
                 return true;
             }
@@ -78,10 +76,7 @@ final class ColorPickerInputHandler {
                 screen.saveCurrentCustomColor();
 
                 session.isEyedropperActive = false;
-                org.lwjgl.glfw.GLFW.glfwSetInputMode(
-                        Minecraft.getInstance().getWindow().handle(),
-                        org.lwjgl.glfw.GLFW.GLFW_CURSOR,
-                        org.lwjgl.glfw.GLFW.GLFW_CURSOR_NORMAL);
+                org.lwjgl.sdl.SDLMouse.SDL_ShowCursor();
                 editor.playClickSound(1.2f);
                 return true;
             }
@@ -228,12 +223,9 @@ final class ColorPickerInputHandler {
     boolean onKeyPressed(net.minecraft.client.input.KeyEvent input) {
         if (!session.isColorPickerOpen) return false;
 
-        if (session.isEyedropperActive && input.key() == org.lwjgl.glfw.GLFW.GLFW_KEY_ESCAPE) {
+        if (session.isEyedropperActive && input.key() == InputConstants.KEY_ESCAPE) {
             session.isEyedropperActive = false;
-            org.lwjgl.glfw.GLFW.glfwSetInputMode(
-                    Minecraft.getInstance().getWindow().handle(),
-                    org.lwjgl.glfw.GLFW.GLFW_CURSOR,
-                    org.lwjgl.glfw.GLFW.GLFW_CURSOR_NORMAL);
+            org.lwjgl.sdl.SDLMouse.SDL_ShowCursor();
             return true;
         }
 
@@ -243,7 +235,7 @@ final class ColorPickerInputHandler {
                 || (screen.gField != null && screen.gField.isFocused())
                 || (screen.bField != null && screen.bField.isFocused());
 
-        if (key == org.lwjgl.glfw.GLFW.GLFW_KEY_ESCAPE) {
+        if (key == InputConstants.KEY_ESCAPE) {
             if (isAnyFieldFocused) {
                 if (screen.hexField != null) screen.hexField.setFocused(false);
                 if (screen.rField != null) screen.rField.setFocused(false);
@@ -255,7 +247,7 @@ final class ColorPickerInputHandler {
             return true;
         }
 
-        if (key == org.lwjgl.glfw.GLFW.GLFW_KEY_TAB) {
+        if (key == InputConstants.KEY_TAB) {
             if (screen.hexField != null && screen.hexField.isFocused()) {
                 screen.hexField.setFocused(false);
                 screen.rField.setFocused(true);
@@ -275,12 +267,12 @@ final class ColorPickerInputHandler {
         }
 
         if (isAnyFieldFocused) {
-            boolean isUp = key == org.lwjgl.glfw.GLFW.GLFW_KEY_UP
-                    || key == org.lwjgl.glfw.GLFW.GLFW_KEY_KP_ADD
-                    || key == org.lwjgl.glfw.GLFW.GLFW_KEY_EQUAL;
-            boolean isDown = key == org.lwjgl.glfw.GLFW.GLFW_KEY_DOWN
-                    || key == org.lwjgl.glfw.GLFW.GLFW_KEY_MINUS
-                    || key == org.lwjgl.glfw.GLFW.GLFW_KEY_KP_SUBTRACT;
+            boolean isUp = key == InputConstants.KEY_UP
+                    || key == InputConstants.KEY_ADD
+                    || key == InputConstants.KEY_EQUAL;
+            boolean isDown = key == InputConstants.KEY_DOWN
+                    || key == InputConstants.KEY_MINUS
+                    || key == org.lwjgl.sdl.SDLScancode.SDL_SCANCODE_KP_MINUS;
 
             if (isUp || isDown) {
                 editor.colorPickerModified = true;
@@ -325,24 +317,24 @@ final class ColorPickerInputHandler {
             boolean changed = false;
 
             if (session.lastClickedHue) {
-                if (key == org.lwjgl.glfw.GLFW.GLFW_KEY_UP) {
+                if (key == InputConstants.KEY_UP) {
                     session.pickerHue = Mth.clamp(session.pickerHue - step, 0.0f, 1.0f);
                     changed = true;
-                } else if (key == org.lwjgl.glfw.GLFW.GLFW_KEY_DOWN) {
+                } else if (key == InputConstants.KEY_DOWN) {
                     session.pickerHue = Mth.clamp(session.pickerHue + step, 0.0f, 1.0f);
                     changed = true;
                 }
             } else {
-                if (key == org.lwjgl.glfw.GLFW.GLFW_KEY_LEFT) {
+                if (key == InputConstants.KEY_LEFT) {
                     session.pickerSat = Mth.clamp(session.pickerSat - step, 0.0f, 1.0f);
                     changed = true;
-                } else if (key == org.lwjgl.glfw.GLFW.GLFW_KEY_RIGHT) {
+                } else if (key == InputConstants.KEY_RIGHT) {
                     session.pickerSat = Mth.clamp(session.pickerSat + step, 0.0f, 1.0f);
                     changed = true;
-                } else if (key == org.lwjgl.glfw.GLFW.GLFW_KEY_UP) {
+                } else if (key == InputConstants.KEY_UP) {
                     session.pickerVal = Mth.clamp(session.pickerVal + step, 0.0f, 1.0f);
                     changed = true;
-                } else if (key == org.lwjgl.glfw.GLFW.GLFW_KEY_DOWN) {
+                } else if (key == InputConstants.KEY_DOWN) {
                     session.pickerVal = Mth.clamp(session.pickerVal - step, 0.0f, 1.0f);
                     changed = true;
                 }

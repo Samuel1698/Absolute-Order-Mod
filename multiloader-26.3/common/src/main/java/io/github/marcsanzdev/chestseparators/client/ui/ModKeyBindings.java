@@ -4,7 +4,6 @@ import com.mojang.blaze3d.platform.InputConstants;
 import dev.architectury.registry.client.keymappings.KeyMappingRegistry;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.resources.Identifier;
-import org.lwjgl.glfw.GLFW;
 
 public class ModKeyBindings {
     public static KeyMapping openEditorKey;
@@ -19,37 +18,37 @@ public class ModKeyBindings {
             KeyMapping.Category.register(Identifier.fromNamespaceAndPath("chestseparators", "keys"));
 
     public static void register() {
-        // Passing GLFW.GLFW_KEY_... directly to the constructor sets that value as the "Reset" default.
+        // The 26.3 keyboard bindings use SDL scancodes from InputConstants for their reset defaults.
         // Architectury's KeyMappingRegistry.register returns void, so each mapping is built first, then registered.
 
         openEditorKey = new KeyMapping(
-                "key.chestseparators.toggle_preview_panel", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_O, CATEGORY);
+                "key.chestseparators.toggle_preview_panel", InputConstants.Type.KEYBOARD, InputConstants.KEY_O, CATEGORY);
         KeyMappingRegistry.register(openEditorKey);
 
         showPanelModifierKey = new KeyMapping(
-                "key.chestseparators.show_panel_modifier", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_LEFT_ALT, CATEGORY);
+                "key.chestseparators.show_panel_modifier", InputConstants.Type.KEYBOARD, InputConstants.KEY_LALT, CATEGORY);
         KeyMappingRegistry.register(showPanelModifierKey);
 
         toggleMagnifierKey = new KeyMapping(
-                "key.chestseparators.toggle_magnifier", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_M, CATEGORY);
+                "key.chestseparators.toggle_magnifier", InputConstants.Type.KEYBOARD, InputConstants.KEY_M, CATEGORY);
         KeyMappingRegistry.register(toggleMagnifierKey);
 
         toggleEditButtonsKey = new KeyMapping(
-                "key.chestseparators.toggle_edit_buttons", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_H, CATEGORY);
+                "key.chestseparators.toggle_edit_buttons", InputConstants.Type.KEYBOARD, InputConstants.KEY_H, CATEGORY);
         KeyMappingRegistry.register(toggleEditButtonsKey);
 
         // Push inventory items INTO the open chest's filters. Hold Shift to also push into empty slots.
-        pushKey = new KeyMapping("key.chestseparators.push", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_S, CATEGORY);
+        pushKey = new KeyMapping("key.chestseparators.push", InputConstants.Type.KEYBOARD, InputConstants.KEY_S, CATEGORY);
         KeyMappingRegistry.register(pushKey);
 
         // Pull the open chest's items INTO the inventory's filters. Hold Shift to also pull unfiltered items.
-        pullKey = new KeyMapping("key.chestseparators.pull", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_D, CATEGORY);
+        pullKey = new KeyMapping("key.chestseparators.pull", InputConstants.Type.KEYBOARD, InputConstants.KEY_D, CATEGORY);
         KeyMappingRegistry.register(pullKey);
 
         // Unbound by default: the primary trigger is the double-tap-sneak gesture, so this hotkey is an
         // optional alternative the player may bind to avoid any conflict with other movement keys.
         autoDepositKey = new KeyMapping(
-                "key.chestseparators.auto_deposit", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_UNKNOWN, CATEGORY);
+                "key.chestseparators.auto_deposit", InputConstants.Type.KEYBOARD, InputConstants.UNKNOWN.getValue(), CATEGORY);
         KeyMappingRegistry.register(autoDepositKey);
     }
 }

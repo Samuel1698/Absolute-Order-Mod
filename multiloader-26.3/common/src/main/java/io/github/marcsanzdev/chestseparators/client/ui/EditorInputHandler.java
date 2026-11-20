@@ -1,5 +1,6 @@
 package io.github.marcsanzdev.chestseparators.client.ui;
 
+import com.mojang.blaze3d.platform.InputConstants;
 import io.github.marcsanzdev.chestseparators.access.IWhitelistProvider;
 import io.github.marcsanzdev.chestseparators.client.EditorState;
 import io.github.marcsanzdev.chestseparators.config.GlobalChestConfig;
@@ -18,7 +19,6 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.ChatFormatting;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.Mth;
-import org.lwjgl.glfw.GLFW;
 
 public class EditorInputHandler {
 
@@ -193,11 +193,8 @@ public class EditorInputHandler {
             if (editor.presetsMenu.keyPressed(input)) return true;
         }
 
-        boolean isControlDown = GLFW.glfwGetKey(
-                                Minecraft.getInstance().getWindow().handle(), GLFW.GLFW_KEY_LEFT_CONTROL)
-                        == GLFW.GLFW_PRESS
-                || GLFW.glfwGetKey(Minecraft.getInstance().getWindow().handle(), GLFW.GLFW_KEY_RIGHT_CONTROL)
-                        == GLFW.GLFW_PRESS;
+        boolean isControlDown = InputConstants.isKeyDown(InputConstants.KEY_LCONTROL)
+                || InputConstants.isKeyDown(InputConstants.KEY_RCONTROL);
 
         if (session.currentState == EditorState.EDIT_FILTER) {
             if (editor.screenEditFilter.keyPressed(input)) {
@@ -212,17 +209,17 @@ public class EditorInputHandler {
 
             if (!isTyping) {
                 // Undo (unified: separators or filters, whichever happened last).
-                if (input.key() == GLFW.GLFW_KEY_Z) {
+                if (input.key() == InputConstants.KEY_Z) {
                     editor.applyUndoRedo(ChestConfigManager.getInstance().undo(), false);
                     return true;
                 }
                 // Redo
-                else if (input.key() == GLFW.GLFW_KEY_Y) {
+                else if (input.key() == InputConstants.KEY_Y) {
                     editor.applyUndoRedo(ChestConfigManager.getInstance().redo(), true);
                     return true;
                 }
                 // Copy — whole-chest layout (lines + backgrounds) in DRAW_LINES, all filters in VIEW_GROUPS.
-                else if (input.key() == GLFW.GLFW_KEY_C) {
+                else if (input.key() == InputConstants.KEY_C) {
                     if (session.currentState == EditorState.VIEW_GROUPS) {
                         ChestConfigManager.getInstance().copyWhitelistsToClipboard();
                         editor.showStatus(Component.translatable("message.chestseparators.filters_copied"), ChatFormatting.GRAY);
@@ -235,7 +232,7 @@ public class EditorInputHandler {
                     return true;
                 }
                 // Paste
-                else if (input.key() == GLFW.GLFW_KEY_V) {
+                else if (input.key() == InputConstants.KEY_V) {
                     if (session.currentState == EditorState.VIEW_GROUPS) {
                         if (ChestConfigManager.getInstance().hasWhitelistClipboardData()) {
                             ChestConfigManager.getInstance().saveWhitelistSnapshot();
@@ -275,7 +272,7 @@ public class EditorInputHandler {
             }
         }
 
-        if (input.key() == GLFW.GLFW_KEY_ESCAPE && session.currentState != EditorState.HIDDEN) {
+        if (input.key() == InputConstants.KEY_ESCAPE && session.currentState != EditorState.HIDDEN) {
             if (session.isPresetsMenuOpen) {
                 session.isPresetsMenuOpen = false;
                 editor.playClickSound(0.8f);

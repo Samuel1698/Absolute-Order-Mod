@@ -1,7 +1,6 @@
 package io.github.marcsanzdev.chestseparators.event;
 
 import com.mojang.blaze3d.platform.InputConstants;
-import org.lwjgl.glfw.GLFW;
 import dev.architectury.event.events.client.ClientTickEvent;
 import dev.architectury.networking.NetworkManager;
 import io.github.marcsanzdev.chestseparators.access.IWhitelistProvider;
@@ -146,13 +145,12 @@ public class KeyInputHandler {
 
     public static boolean isModifierPressed() {
         // Whether the "show panel" modifier key (default Left Alt) is currently held. Reading the mapping's
-        // live pressed state keeps this loader-agnostic (no Fabric KeyBindingHelper / raw GLFW poll needed).
+        // live pressed state keeps this loader-agnostic (no Fabric KeyBindingHelper / raw SDL call needed).
         // Over an open container vanilla stops updating KeyMapping down-state, so isDown() reads
         // false there; poll the bound key raw (as the Shift checks do), falling back to isDown().
         InputConstants.Key bound = InputConstants.getKey(ModKeyBindings.showPanelModifierKey.saveString());
-        if (bound.getType() == InputConstants.Type.KEYSYM && bound.getValue() != GLFW.GLFW_KEY_UNKNOWN) {
-            long window = Minecraft.getInstance().getWindow().handle();
-            if (GLFW.glfwGetKey(window, bound.getValue()) == GLFW.GLFW_PRESS) return true;
+        if (bound.getType() == InputConstants.Type.KEYBOARD && bound.getValue() != InputConstants.UNKNOWN.getValue()) {
+            if (InputConstants.isKeyDown(bound.getValue())) return true;
         }
         return ModKeyBindings.showPanelModifierKey.isDown();
     }

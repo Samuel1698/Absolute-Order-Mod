@@ -49,7 +49,7 @@ public class WideButtonWidget extends CustomWidget {
         }
 
         if (this.icon != null) {
-            com.mojang.blaze3d.pipeline.RenderPipeline pipeline = net.minecraft.client.renderer.RenderPipelines.GUI_TEXTURED;
+            com.mojang.renderpearl.api.pipeline.RenderPipeline pipeline = net.minecraft.client.renderer.RenderPipelines.GUI_TEXTURED;
             context.blit(
                     pipeline, this.icon, x + 2, y + 2, 0.0F, 0.0F, 16, 16, texSize, texSize, texSize, texSize, -1);
         }
@@ -94,7 +94,7 @@ public class WideButtonWidget extends CustomWidget {
         int disabledColor = 0xFF6A6A72;
 
         if (iconToDraw != null) {
-            com.mojang.blaze3d.pipeline.RenderPipeline pipeline = net.minecraft.client.renderer.RenderPipelines.GUI_TEXTURED;
+            com.mojang.renderpearl.api.pipeline.RenderPipeline pipeline = net.minecraft.client.renderer.RenderPipelines.GUI_TEXTURED;
             context.blit(
                     pipeline,
                     iconToDraw,

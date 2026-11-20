@@ -1,5 +1,6 @@
 package io.github.marcsanzdev.chestseparators.client.ui.screens;
 
+import com.mojang.blaze3d.platform.InputConstants;
 import io.github.marcsanzdev.chestseparators.client.EditorState;
 import io.github.marcsanzdev.chestseparators.client.ModTextures;
 import io.github.marcsanzdev.chestseparators.client.ui.ChestSeparatorsEditor;
@@ -1081,11 +1082,11 @@ public class ScreenEditFilter extends AbstractEditorScreen {
 
         if (isSearchFocused) {
             if (editor.searchBox.keyPressed(input)) return true;
-            if (input.key() != org.lwjgl.glfw.GLFW.GLFW_KEY_ESCAPE) return true;
+            if (input.key() != InputConstants.KEY_ESCAPE) return true;
         }
         if (isWhitelistSearchFocused) {
             if (editor.whitelistSearchBox.keyPressed(input)) return true;
-            if (input.key() != org.lwjgl.glfw.GLFW.GLFW_KEY_ESCAPE) return true;
+            if (input.key() != InputConstants.KEY_ESCAPE) return true;
         }
 
         // Typing anywhere in the filter editor jumps to the item search, so the inventory key ("e" by
@@ -1093,7 +1094,7 @@ public class ScreenEditFilter extends AbstractEditorScreen {
         // This now applies on ANY tab, not only the search tab: switch to the search tab first, focus the
         // box and consume the key; charTyped then inserts the character.
         if (!isSearchFocused && !isWhitelistSearchFocused && editor.searchBox != null) {
-            if (input.key() != org.lwjgl.glfw.GLFW.GLFW_KEY_UNKNOWN
+            if (input.key() != InputConstants.UNKNOWN.getValue()
                     && Minecraft.getInstance().options.keyInventory.matches(input)) {
                 if (!isOnSearchTab()) switchToSearchTab();
                 editor.searchBox.setFocused(true);
@@ -1103,9 +1104,9 @@ public class ScreenEditFilter extends AbstractEditorScreen {
         }
 
         if (!isSearchFocused && !isWhitelistSearchFocused) {
-            if (input.key() == org.lwjgl.glfw.GLFW.GLFW_KEY_UP || input.key() == org.lwjgl.glfw.GLFW.GLFW_KEY_DOWN) {
+            if (input.key() == InputConstants.KEY_UP || input.key() == InputConstants.KEY_DOWN) {
                 float scrollAmount = 18f * 2;
-                int direction = (input.key() == org.lwjgl.glfw.GLFW.GLFW_KEY_UP) ? -1 : 1;
+                int direction = (input.key() == InputConstants.KEY_UP) ? -1 : 1;
 
                 if (session.lastInteractedWasList) {
                     float maxListScroll = layout.maxListScroll(session.visibleLeftListItems.size());

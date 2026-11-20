@@ -535,7 +535,7 @@ public class ScreenDrawLines extends AbstractEditorScreen {
             Identifier icon = (i == 0)
                     ? ModTextures.ICON_SM_PENCIL
                     : (i == 1) ? ModTextures.ICON_SM_BRUSH : ModTextures.ICON_SM_COMBO;
-            com.mojang.blaze3d.pipeline.RenderPipeline pipeline = net.minecraft.client.renderer.RenderPipelines.GUI_TEXTURED;
+            com.mojang.renderpearl.api.pipeline.RenderPipeline pipeline = net.minecraft.client.renderer.RenderPipelines.GUI_TEXTURED;
             if (isSelected) {
                 io.github.marcsanzdev.chestseparators.client.ui.UiTheme.pushActiveContent(context, tabX, tabY, 20, 20);
             }

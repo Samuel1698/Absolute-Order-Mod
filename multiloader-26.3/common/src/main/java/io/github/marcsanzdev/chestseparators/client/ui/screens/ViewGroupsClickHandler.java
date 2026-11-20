@@ -1,5 +1,6 @@
 package io.github.marcsanzdev.chestseparators.client.ui.screens;
 
+import com.mojang.blaze3d.platform.InputConstants;
 import io.github.marcsanzdev.chestseparators.client.EditorState;
 import io.github.marcsanzdev.chestseparators.client.ui.ChestSeparatorsEditor;
 import io.github.marcsanzdev.chestseparators.client.ui.EditorGeometry;
@@ -80,18 +81,8 @@ final class ViewGroupsClickHandler {
                 boolean isDoubleClick =
                         (key == session.lastClickedSlotIndex && (now - session.lastSlotClickTime) < 300);
 
-                boolean isShiftDown = org.lwjgl.glfw.GLFW.glfwGetKey(
-                                        Minecraft.getInstance()
-                                                .getWindow()
-                                                .handle(),
-                                        org.lwjgl.glfw.GLFW.GLFW_KEY_LEFT_SHIFT)
-                                == org.lwjgl.glfw.GLFW.GLFW_PRESS
-                        || org.lwjgl.glfw.GLFW.glfwGetKey(
-                                        Minecraft.getInstance()
-                                                .getWindow()
-                                                .handle(),
-                                        org.lwjgl.glfw.GLFW.GLFW_KEY_RIGHT_SHIFT)
-                                == org.lwjgl.glfw.GLFW.GLFW_PRESS;
+                boolean isShiftDown = InputConstants.isKeyDown(InputConstants.KEY_LSHIFT)
+                        || InputConstants.isKeyDown(InputConstants.KEY_RSHIFT);
 
                 if (session.currentState == EditorState.VIEW_GROUPS
                         && groupId != null

@@ -28,7 +28,7 @@ public abstract class ArmorEquipFilterMixin {
 
     @Inject(method = "handleUseItem", at = @At("HEAD"), cancellable = true)
     private void enforceFilterOnArmorEquip(ServerboundUseItemPacket packet, CallbackInfo ci) {
-        ItemStack stack = player.getItemInHand(packet.getHand());
+        ItemStack stack = player.getItemInHand(packet.hand());
         if (stack.isEmpty()) return;
 
         var equippable = stack.get(DataComponents.EQUIPPABLE);

@@ -284,7 +284,7 @@ final class WhitelistPreviewPanelRenderer {
         int color = isActive
                 ? io.github.marcsanzdev.chestseparators.client.ui.UiTheme.ICON_ACTIVE
                 : io.github.marcsanzdev.chestseparators.client.ui.UiTheme.TEXT_MUTED;
-        com.mojang.blaze3d.pipeline.RenderPipeline pipeline = net.minecraft.client.renderer.RenderPipelines.GUI_TEXTURED;
+        com.mojang.renderpearl.api.pipeline.RenderPipeline pipeline = net.minecraft.client.renderer.RenderPipelines.GUI_TEXTURED;
         // An active tab draws 1px smaller; shrink its icon by the same proportion.
         if (isActive) {
             io.github.marcsanzdev.chestseparators.client.ui.UiTheme.pushActiveContent(context, x, y, w, h);

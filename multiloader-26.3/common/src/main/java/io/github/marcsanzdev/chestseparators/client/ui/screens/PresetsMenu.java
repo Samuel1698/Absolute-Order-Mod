@@ -1,5 +1,6 @@
 package io.github.marcsanzdev.chestseparators.client.ui.screens;
 
+import com.mojang.blaze3d.platform.InputConstants;
 import io.github.marcsanzdev.chestseparators.client.ModTextures;
 import io.github.marcsanzdev.chestseparators.client.ui.ChestSeparatorsEditor;
 import io.github.marcsanzdev.chestseparators.client.ui.UiTheme;
@@ -951,11 +952,11 @@ public final class PresetsMenu {
     public boolean keyPressed(KeyEvent input) {
         if (!isRenaming() || renameField == null) return false;
         int key = input.key();
-        if (key == org.lwjgl.glfw.GLFW.GLFW_KEY_ENTER || key == org.lwjgl.glfw.GLFW.GLFW_KEY_KP_ENTER) {
+        if (key == InputConstants.KEY_RETURN || key == InputConstants.KEY_NUMPADENTER) {
             commitRename();
             return true;
         }
-        if (key == org.lwjgl.glfw.GLFW.GLFW_KEY_ESCAPE) {
+        if (key == InputConstants.KEY_ESCAPE) {
             cancelRename();
             return true;
         }

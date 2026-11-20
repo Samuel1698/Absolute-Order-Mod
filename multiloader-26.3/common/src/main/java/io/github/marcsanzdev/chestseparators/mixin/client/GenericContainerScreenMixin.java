@@ -1,5 +1,6 @@
 package io.github.marcsanzdev.chestseparators.mixin.client;
 
+import com.mojang.blaze3d.platform.InputConstants;
 import com.mojang.blaze3d.platform.cursor.CursorType;
 import io.github.marcsanzdev.chestseparators.client.ui.ChestSeparatorsEditor;
 import io.github.marcsanzdev.chestseparators.client.ui.ModKeyBindings;
@@ -272,13 +273,8 @@ public abstract class GenericContainerScreenMixin extends Screen {
             // Holding Shift runs the "+ empty slots" variant of each — push also into empty slots, pull also
             // unfiltered items — matching the Shift behaviour of the deposit and fill buttons.
             if (!this.editor.isEditMode() && GlobalChestConfig.instance.showDepositButton) {
-                long window = net.minecraft.client.Minecraft.getInstance()
-                        .getWindow()
-                        .handle();
-                boolean shift = org.lwjgl.glfw.GLFW.glfwGetKey(window, org.lwjgl.glfw.GLFW.GLFW_KEY_LEFT_SHIFT)
-                                == org.lwjgl.glfw.GLFW.GLFW_PRESS
-                        || org.lwjgl.glfw.GLFW.glfwGetKey(window, org.lwjgl.glfw.GLFW.GLFW_KEY_RIGHT_SHIFT)
-                                == org.lwjgl.glfw.GLFW.GLFW_PRESS;
+                boolean shift = InputConstants.isKeyDown(InputConstants.KEY_LSHIFT)
+                        || InputConstants.isKeyDown(InputConstants.KEY_RSHIFT);
 
                 if (ModKeyBindings.pushKey.matches(input)) {
                     this.editor.depositClickTime = System.currentTimeMillis();

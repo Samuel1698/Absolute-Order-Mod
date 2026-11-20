@@ -1,5 +1,6 @@
 package io.github.marcsanzdev.chestseparators.client.ui;
 
+import com.mojang.blaze3d.platform.InputConstants;
 import io.github.marcsanzdev.chestseparators.client.EditorState;
 import io.github.marcsanzdev.chestseparators.config.GlobalChestConfig;
 import io.github.marcsanzdev.chestseparators.data.ChestConfigManager;
@@ -12,7 +13,6 @@ import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.network.chat.Component;
-import org.lwjgl.glfw.GLFW;
 
 public class EditorRenderer {
 
@@ -419,9 +419,8 @@ public class EditorRenderer {
      * container items that would be pulled to you (accent wash + count).
      */
     void renderTransferPreviewOverlay(GuiGraphicsExtractor context, int mouseX, int mouseY) {
-        long window = Minecraft.getInstance().getWindow().handle();
-        boolean shift = GLFW.glfwGetKey(window, GLFW.GLFW_KEY_LEFT_SHIFT) == GLFW.GLFW_PRESS
-                || GLFW.glfwGetKey(window, GLFW.GLFW_KEY_RIGHT_SHIFT) == GLFW.GLFW_PRESS;
+        boolean shift = InputConstants.isKeyDown(InputConstants.KEY_LSHIFT)
+                || InputConstants.isKeyDown(InputConstants.KEY_RSHIFT);
 
         boolean hoverDeposit = false;
         if (GlobalChestConfig.instance.showDepositButton

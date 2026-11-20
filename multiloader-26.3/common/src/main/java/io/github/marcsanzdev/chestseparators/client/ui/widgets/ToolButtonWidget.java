@@ -69,7 +69,7 @@ public class ToolButtonWidget extends CustomWidget {
 
     private void drawIcon(GuiGraphicsExtractor context, Identifier base, Identifier mask, int color) {
         if (base == null) return;
-        com.mojang.blaze3d.pipeline.RenderPipeline pipeline = net.minecraft.client.renderer.RenderPipelines.GUI_TEXTURED;
+        com.mojang.renderpearl.api.pipeline.RenderPipeline pipeline = net.minecraft.client.renderer.RenderPipelines.GUI_TEXTURED;
 
         int baseColor = -1;
         if (this.tintByState) {

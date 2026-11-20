@@ -51,10 +51,7 @@ public class ScreenColorPicker extends AbstractEditorScreen {
                 ModTextures.ICON_SM_EYEDROPPER,
                 () -> {
                     session.isEyedropperActive = true;
-                    org.lwjgl.glfw.GLFW.glfwSetInputMode(
-                            Minecraft.getInstance().getWindow().handle(),
-                            org.lwjgl.glfw.GLFW.GLFW_CURSOR,
-                            org.lwjgl.glfw.GLFW.GLFW_CURSOR_HIDDEN);
+                    org.lwjgl.sdl.SDLMouse.SDL_HideCursor();
                     editor.playClickSound(1.2f);
                 });
         btnEyedropper.tooltipText =
@@ -465,7 +462,7 @@ public class ScreenColorPicker extends AbstractEditorScreen {
         context.fill(previewX, previewY, previewX + pw, previewY + ph, 0xFF000000 | hoveredPixelColor);
         drawColorBevel(context, previewX, previewY, pw, ph, hoveredPixelColor, false);
 
-        com.mojang.blaze3d.pipeline.RenderPipeline pipeline = net.minecraft.client.renderer.RenderPipelines.GUI_TEXTURED;
+        com.mojang.renderpearl.api.pipeline.RenderPipeline pipeline = net.minecraft.client.renderer.RenderPipelines.GUI_TEXTURED;
         context.blit(
                 pipeline,
                 io.github.marcsanzdev.chestseparators.client.ModTextures.ICON_SM_EYEDROPPER,

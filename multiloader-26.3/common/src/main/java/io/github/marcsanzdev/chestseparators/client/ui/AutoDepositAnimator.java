@@ -332,7 +332,7 @@ public final class AutoDepositAnimator {
 
             matrices.pushPose();
             matrices.translate(pos.x - camPos.x, pos.y - camPos.y, pos.z - camPos.z);
-            matrices.mulPose(Axis.YP.rotationDegrees(spin));
+            matrices.rotate(Axis.YP.rotationDegrees(spin));
             matrices.scale(1.25f, 1.25f, 1.25f);
             renderState.submit(matrices, queue, packedLight, OverlayTexture.NO_OVERLAY, 0);
             matrices.popPose();

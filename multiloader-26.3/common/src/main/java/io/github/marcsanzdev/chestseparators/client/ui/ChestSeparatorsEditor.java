@@ -1,5 +1,6 @@
 package io.github.marcsanzdev.chestseparators.client.ui;
 
+import com.mojang.blaze3d.platform.InputConstants;
 import io.github.marcsanzdev.chestseparators.access.IWhitelistProvider;
 import io.github.marcsanzdev.chestseparators.client.EditorState;
 import io.github.marcsanzdev.chestseparators.client.ModTextures;
@@ -29,7 +30,6 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.util.Mth;
-import org.lwjgl.glfw.GLFW;
 
 public class ChestSeparatorsEditor {
 
@@ -416,10 +416,7 @@ public class ChestSeparatorsEditor {
         ChestPosStorage.lastOpenedShulkerUUID = null;
         session.isColorPickerOpen = false;
         activeSession = new EditorSessionData();
-        org.lwjgl.glfw.GLFW.glfwSetInputMode(
-                Minecraft.getInstance().getWindow().handle(),
-                org.lwjgl.glfw.GLFW.GLFW_CURSOR,
-                org.lwjgl.glfw.GLFW.GLFW_CURSOR_NORMAL);
+        org.lwjgl.sdl.SDLMouse.SDL_ShowCursor();
     }
 
     public void render(GuiGraphicsExtractor context, int mouseX, int mouseY, float delta) {
@@ -1034,11 +1031,10 @@ public class ChestSeparatorsEditor {
         return mouseX >= x && mouseX < x + width && mouseY >= y && mouseY < y + height;
     }
 
-    /** Whether either Shift key is held right now (polled from GLFW at call time). */
+    /** Whether either Shift key is held right now (polled from SDL via InputConstants at call time). */
     private static boolean isShiftDown() {
-        long window = Minecraft.getInstance().getWindow().handle();
-        return GLFW.glfwGetKey(window, GLFW.GLFW_KEY_LEFT_SHIFT) == GLFW.GLFW_PRESS
-                || GLFW.glfwGetKey(window, GLFW.GLFW_KEY_RIGHT_SHIFT) == GLFW.GLFW_PRESS;
+        return InputConstants.isKeyDown(InputConstants.KEY_LSHIFT)
+                || InputConstants.isKeyDown(InputConstants.KEY_RSHIFT);
     }
 
     public int shiftColor(int color, int amount) {
@@ -1136,7 +1132,7 @@ public class ChestSeparatorsEditor {
 
         if (isSearchFocused) {
             if (searchBox.keyPressed(input)) return true;
-            if (input.key() == org.lwjgl.glfw.GLFW.GLFW_KEY_ESCAPE) {
+            if (input.key() == InputConstants.KEY_ESCAPE) {
                 searchBox.setFocused(false);
                 return true;
             }

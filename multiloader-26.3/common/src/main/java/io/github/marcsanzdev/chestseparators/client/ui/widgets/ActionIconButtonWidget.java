@@ -55,7 +55,7 @@ public class ActionIconButtonWidget extends CustomWidget {
         int startX = x + (width - contentWidth) / 2;
 
         if (icon != null) {
-            com.mojang.blaze3d.pipeline.RenderPipeline pipeline = net.minecraft.client.renderer.RenderPipelines.GUI_TEXTURED;
+            com.mojang.renderpearl.api.pipeline.RenderPipeline pipeline = net.minecraft.client.renderer.RenderPipelines.GUI_TEXTURED;
             context.blit(
                     pipeline,
                     icon,
